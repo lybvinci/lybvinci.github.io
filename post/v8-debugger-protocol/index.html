@@ -1,0 +1,1123 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>V8 Debugger Protocol | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              V8 Debugger Protocol
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+            </div>
+            
+            <div class="post-content">
+              <h1 id="v8-debugger-protocol">V8 Debugger Protocol</h1>
+<p>This document describes the message based protocol exposed by V8.
+It's a very simple text-based protocol.
+As with HTTP there's a strict definition of line breaks:
+They MUST be &quot;\r\n&quot;.
+Every message frame consists of a <code>headers</code> and a <code>body</code> part:</p>
+<!-- more --> 
+<pre><code>Header-A: Some-Value\r\n
+Content-Length: 9\r\n
+\r\n
+{&quot;seq&quot;:1}
+</code></pre>
+<p>Each frame MUST have a <code>Content-Length</code> headers.
+The header value MUST be the byte length of the body section.
+The next message starts immediately after the last byte of the body.
+The body is generally JSON encoded,
+see <a href="#frame-body">frame body</a> below for the format.</p>
+<p>When connecting a special, body-less message is sent by V8.
+The following example is from connecting to a node.js instance:</p>
+<pre><code>Type: connect\r\n
+V8-Version: 3.14.5.9\r\n
+Protocol-Version: 1\r\n
+Embedding-Host: node v0.10.26\r\n
+Content-Length: 0\r\n
+\r\n
+</code></pre>
+<h2 id="frame-body">Frame Body</h2>
+<p>Each message body is a JSON object with the following properties:</p>
+<ul>
+<li><code>seq</code>: Identifier of this message.
+This is used to map responses to the proper request.</li>
+<li><code>type</code>: Either &quot;request&quot;, &quot;response&quot;, or &quot;event&quot;</li>
+</ul>
+<h3 id="request-message">Request Message</h3>
+<p>These are sent by the debug client to v8.
+Request messages have two additional properties:</p>
+<ul>
+<li><code>command</code>: The command that is invoked</li>
+<li><code>arguments</code>: A object with named arguments, optional</li>
+</ul>
+<p><a href="#requestresponse-pairs">Available commands</a> are documented below.</p>
+<h4 id="example">Example</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;}
+</code></pre>
+<h3 id="response-message">Response Message</h3>
+<p>These are sent to the debug client by v8.
+Response message have the following additional properties:</p>
+<ul>
+<li><code>request_seq</code>: The request this is the response to</li>
+<li><code>command</code>: The original command</li>
+<li><code>success</code>: If true, look at <code>body</code>, otherwise look at <code>message</code></li>
+<li><code>body</code>: The &quot;return value&quot; of the command, only if <code>success</code> is true</li>
+<li><code>message</code>: Error message for failed commands</li>
+<li><code>running</code>: <code>false</code> if the vm is suspended, <code>true</code> otherwise</li>
+<li><code>refs</code>: Array of referenced values in the body</li>
+</ul>
+<p>The type of body to expect is documented below,
+in the section <a href="#requestresponse-pairs">request/response pairs</a>.</p>
+<h4 id="example-successful-response">Example: Successful response</h4>
+<pre><code class="language-js">{ &quot;seq&quot;:67,
+  &quot;type&quot;:&quot;response&quot;,
+  &quot;request_seq&quot;:117,
+  &quot;command&quot;:&quot;continue&quot;,
+  &quot;success&quot;:true,
+  &quot;running&quot;: true }
+</code></pre>
+<h4 id="example-successful-response-returning-data">Example: Successful response, returning data</h4>
+<pre><code class="language-js">{ &quot;seq&quot;:67,
+  &quot;type&quot;:&quot;response&quot;,
+  &quot;request_seq&quot;:117,
+  &quot;command&quot;:&quot;scope&quot;,
+  &quot;success&quot;:true,
+  &quot;running&quot;: true,
+  &quot;body&quot;: { &quot;index&quot;:0, &quot;frameIndex&quot;:0 } }
+</code></pre>
+<h4 id="example-failing-response">Example: Failing response</h4>
+<pre><code class="language-js">{ &quot;seq&quot;:67,
+  &quot;type&quot;:&quot;response&quot;,
+  &quot;request_seq&quot;:117,
+  &quot;command&quot;:&quot;frame&quot;,
+  &quot;success&quot;:false,
+  &quot;running&quot;: true,
+  &quot;message&quot;: &quot;Missing arguments&quot; }
+</code></pre>
+<h4 id="example-what-is-refs">Example: What is <code>refs</code>?</h4>
+<p><em>Important to note:</em>
+There's no guarantee that everything referenced inside of <code>refs</code>
+will itself resolve.
+The <code>ref</code> properties denote references to mirror objects.
+Mirror objects are identified by their <code>handle</code>.
+<code>refs</code> contains an array of serialized mirror objects.</p>
+<pre><code class="language-js">[ { handle: 4,
+    type: 'function',
+    className: 'Function',
+    constructorFunction: { ref: 8 },
+    protoObject: { ref: 9 },
+    prototypeObject: { ref: 5 },
+    name: 'Error',
+    inferredName: '',
+    resolved: true,
+    source: 'function Error() { [native code] }',
+    scopes: [],
+    properties: 
+     [ { name: 'length', attributes: 7, propertyType: 3, ref: 10 },
+       { name: 'name', attributes: 7, propertyType: 3, ref: 11 } ],
+    text: 'function Error() { [native code] }' },
+  { handle: 6, type: 'undefined', text: 'undefined' },
+  { handle: 7,
+    type: 'string',
+    value: 'err message',
+    length: 11,
+    text: 'err message' } ]
+</code></pre>
+<h3 id="event-message">Event Message</h3>
+<p>Sent by v8 to the debug client.
+These messages look similar to response messages
+in that they also contain <code>body</code> and <code>refs</code>.
+Additionally:</p>
+<ul>
+<li><code>event</code>: Type of event</li>
+</ul>
+<p>You can find a list of <a href="#events">available events</a> below.</p>
+<h2 id="requestresponse-pairs">Request/response pairs</h2>
+<p>The name of the command is followed by the name of function in
+<code>src/debug-debugger.js</code> that handles the command.
+Most filenames in this section reference the v8 codebase.
+Other important files are <code>mirror-debugger.js</code> and <code>messages.js</code>
+for serialization.
+Implementation details of macros can be found in <code>runtime.cc</code>.</p>
+<h3 id="request-continue-continuerequest_">Request <code>continue</code> - <code>continueRequest_</code></h3>
+<blockquote>
+<p>The request continue is a request from the debugger to start the VM running again.
+As part of the continue request the debugger can specify if it wants the VM to perform a single step action.</p>
+<p>In the response the property running will always be true as the VM will be running after executing the continue command.
+If a single step action is requested the VM will respond with a break event after running the step.</p>
+</blockquote>
+<p><em>Warning:</em> Sometimes the non-presence of <code>arguments</code> is not the same
+as an empty arguments object.
+Also even though it looks like the handler for <code>continue</code> doesn't do anything
+when no arguments are passed in,
+the fact that it is setting <code>response.running</code> to true will magically resume
+execution.</p>
+<h4 id="arguments">Arguments</h4>
+<p>When no arguments are provided, this command will just resume execution.</p>
+<p>For step-based actions, pass the following arguments:</p>
+<ul>
+<li><code>stepaction</code>: One of the actions listed below, string,
+required (the default value is ignored)</li>
+<li><code>stepcount</code>: How many steps to take, uint, optional, default: <code>1</code></li>
+</ul>
+<p>Available step actions (taken from <code>src/debug.h</code>)</p>
+<ul>
+<li><strong>out</strong>: Step out of the current function. <code>StepOut = 0</code></li>
+<li><strong>next</strong>: Step to the next statement in the current function. <code>StepNext = 1</code></li>
+<li><strong>in</strong>: Step into new functions invoked
+or the next statement in the current function. <code>StepIn = 2</code></li>
+<li><strong>min</strong>: Perform a minimum step in the current function. <code>StepMin = 3</code></li>
+</ul>
+<p><code>StepInMin</code> does not seem to be supported by the debugger protocol.</p>
+<h4 id="response">Response</h4>
+<p><em>Empty response</em></p>
+<h4 id="example-just-resume-execution">Example: Just resume execution</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;}
+</code></pre>
+<h4 id="example-step-forward-5-statements">Example: Step forward 5 statements</h4>
+<pre><code class="language-js">{ &quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;,
+  &quot;arguments&quot;: { &quot;stepaction&quot;: &quot;next&quot;, &quot;stepcount&quot;: 5 } }
+</code></pre>
+<h3 id="request-break-breakrequest_">Request <code>break</code> - <code>breakRequest_</code></h3>
+<p>Seems to be doing nothing. Quote:</p>
+<blockquote>
+<p>Ignore as break command does not do anything when broken.</p>
+</blockquote>
+<h3 id="request-setbreakpoint-setbreakpointrequest_">Request <code>setbreakpoint</code> - <code>setBreakPointRequest_</code></h3>
+<blockquote>
+<p>The request setbreakpoint creates a new break point.
+This request can be used to set both function and script break points.
+A function break point sets a break point in an existing function
+whereas a script break point sets a break point in a named script.
+A script break point can be set even if the named script is not found.</p>
+<p>The result of the setbreakpoint request is a response with the number of the newly created break point.
+This break point number is used in the changebreakpoint and clearbreakpoint requests.</p>
+</blockquote>
+<h4 id="arguments-2">Arguments</h4>
+<ul>
+<li><code>type</code>: Type of breakpoint to create, see below (string)</li>
+<li><code>target</code>: Script or function to break at (string)</li>
+<li><code>line</code>/<code>column</code>: Position for script breakpoints (uint)</li>
+<li><code>enabled</code>: Starts off enabled, default: true</li>
+<li><code>condition</code>: Expression that guards the breakpoint (string)</li>
+<li><code>ignoreCount</code>: uint, default: 0</li>
+<li><code>groupId</code>: Script breakpoints only,
+allows to clear multiple breakpoints at once, uint.</li>
+</ul>
+<p>Known breakpoint types and what <code>target</code> should be:</p>
+<ul>
+<li><strong>function</strong>: <code>target</code> evaluates to a function in global scope</li>
+<li><strong>handle</strong>: <code>target</code> is the (stringified) handle of a function</li>
+<li><strong>script</strong>: <code>target</code> is the name of a script</li>
+<li><strong>scriptId</strong>: <code>target</code> is the id of some already compiled script</li>
+<li><strong>scriptRegExp</strong>: <code>target</code> matches the name of a script</li>
+</ul>
+<h4 id="response-2">Response</h4>
+<ul>
+<li><code>type</code>: &quot;scriptId&quot;, &quot;scriptName&quot;, &quot;scriptRegExp&quot;, or &quot;function&quot;</li>
+<li><code>breakpoint</code>: Breakpoint id, number</li>
+<li><code>actual_locations</code>: Array of locations where the breakpoint will fire.
+Will have one element for function breakpoints,
+may have multiple locations for script breakpoints.
+Every entry consists of <code>{scriptId, line, columns}</code>.</li>
+<li><code>line</code>/<code>column</code>: Location of breakpoint, script breakpoint only</li>
+<li><code>script_id</code>: Only for scriptId breakpoints</li>
+<li><code>script_name</code>: Only for scriptName breakpoints</li>
+<li><code>script_regexp</code>: Regex (as string), only for scriptRegExp breakpoints</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function&quot;,&quot;target&quot;:&quot;f&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;script&quot;,&quot;target&quot;:&quot;test.js&quot;,&quot;line&quot;:100}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function&quot;,&quot;target&quot;:&quot;f&quot;,&quot;condition&quot;:&quot;i &gt; 7&quot;}}
+</code></pre>
+<h3 id="request-setexceptionbreak-setexceptionbreakrequest_">Request <code>setexceptionbreak</code> - <code>setExceptionBreakRequest_</code></h3>
+<blockquote>
+<p>The request setexceptionbreak is a request to enable/disable breaks on all / uncaught exceptions.
+If the &quot;enabled&quot; argument is not specify,
+the debuggee will toggle the state of the specified break type.</p>
+</blockquote>
+<h4 id="arguments-3">Arguments</h4>
+<ul>
+<li><code>type</code>: Either &quot;all&quot; or &quot;uncaught&quot;, required</li>
+<li><code>enabled</code>: Defaults to the opposite of whatever the current state is</li>
+</ul>
+<h4 id="response-3">Response</h4>
+<p><code>type</code> and <code>enabled</code>. If enabled wasn't passed in, the response can be used
+to detect the current status.</p>
+<h4 id="examples-2">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;,&quot;enabled&quot;:false}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;uncaught&quot;,&quot;enabled&quot;:true}}
+</code></pre>
+<h3 id="request-changebreakpoint-changebreakpointrequest_">Request <code>changebreakpoint</code> - <code>changeBreakPointRequest_</code></h3>
+<blockquote>
+<p>The request changebreakpoint changes the status of a break point.</p>
+</blockquote>
+<h4 id="arguments-4">Arguments</h4>
+<ul>
+<li><code>breakpoint</code>: Breakpoint id, number</li>
+<li><code>enabled</code>: Optional, enable or disable the breakpoint</li>
+<li><code>condition</code>: Optional, change the condition</li>
+<li><code>ignoreCount</code>: Optional, reset the ignore count</li>
+</ul>
+<h4 id="response-4">Response</h4>
+<p><em>Empty response</em></p>
+<h3 id="request-clearbreakpoint-clearbreakpointrequest_">Request <code>clearbreakpoint</code> - <code>clearBreakPointRequest_</code></h3>
+<blockquote>
+<p>The request clearbreakpoint clears a break point.</p>
+</blockquote>
+<h4 id="arguments-5">Arguments</h4>
+<ul>
+<li><code>breakpoint</code>: Breakpoint id, number</li>
+</ul>
+<h4 id="response-5">Response</h4>
+<ul>
+<li><code>breakpoint</code>: Breakpoint id, number</li>
+</ul>
+<h4 id="examples-3">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;clearbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function&quot;,&quot;breakpoint&quot;:1}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;clearbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;script&quot;,&quot;breakpoint&quot;:2}}
+</code></pre>
+<h3 id="request-clearbreakpointgroup-clearbreakpointgrouprequest_">Request <code>clearbreakpointgroup</code> - <code>clearBreakPointGroupRequest_</code></h3>
+<h4 id="arguments-6">Arguments</h4>
+<ul>
+<li><code>groupId</code>: Breakpoint group id, number</li>
+</ul>
+<h4 id="response-6">Response</h4>
+<ul>
+<li><code>breakpoints</code>: Array of cleared breakpoint ids</li>
+</ul>
+<h3 id="request-listbreakpoints-listbreakpointsrequest_">Request <code>listbreakpoints</code> - <code>listBreakpointsRequest_</code></h3>
+<blockquote>
+<p>The request listbreakpoints is used to get information on breakpoints
+that may have been set by the debugger.</p>
+</blockquote>
+<p>This seems to only list script break points.</p>
+<h4 id="arguments-7">Arguments</h4>
+<p><em>No arguments</em></p>
+<h4 id="response-7">Response</h4>
+<ul>
+<li><code>breakpoints</code>: Array of breakpoints, see below</li>
+<li><code>breakOnExceptions</code>: Current state of &quot;all&quot;</li>
+<li><code>breakOnUncaughtExceptions</code>: Current state of &quot;uncaught&quot;</li>
+</ul>
+<p>Breakpoint descriptions contain the following fields:</p>
+<ul>
+<li><code>type</code>: &quot;scriptId&quot;, &quot;scriptName&quot;, &quot;scriptRegExp&quot;, or &quot;function&quot;</li>
+<li><code>number</code>: Breakpoint id, number</li>
+<li><code>line</code>/<code>column</code>: Position in file</li>
+<li><code>groupId</code>: Breakpoint group id</li>
+<li><code>hit_count</code>: How often the breakpoint was hit already</li>
+<li><code>active</code>: If the breakpoint is enabled</li>
+<li><code>condition</code>: Condition expression</li>
+<li><code>ignoreCount</code>: Remaining ignore count.
+Will update whenever the breakpoint is ignored.</li>
+<li><code>actual_locations</code>: See above, <code>{scriptId, line, column}</code></li>
+<li><code>script_id</code>: Only for scriptId breakpoints</li>
+<li><code>script_name</code>: Only for scriptName breakpoints</li>
+<li><code>script_regexp</code>: Regex (as string), only for scriptRegExp breakpoints</li>
+</ul>
+<h4 id="examples-4">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;listbreakpoints&quot;}
+</code></pre>
+<h3 id="request-disconnect-disconnectrequest_">Request <code>disconnect</code> - <code>disconnectRequest_</code></h3>
+<blockquote>
+<p>The request disconnect is used to detach the remote debugger
+from the debuggee.
+This will trigger the debuggee to disable all active breakpoints
+and resumes execution if the debuggee was previously stopped at a break.</p>
+</blockquote>
+<p>Disable all breakpoints and continue.</p>
+<h4 id="arguments-8">Arguments</h4>
+<p>All arguments that are valid for <code>continue</code> will work
+though anything but no arguments could be pretty confusing.</p>
+<h4 id="response-8">Response</h4>
+<p><em>Empty response</em></p>
+<h4 id="examples-5">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;disconnect&quot;}
+</code></pre>
+<h3 id="request-backtrace-backtracerequest_">Request <code>backtrace</code> - <code>backtraceRequest_</code></h3>
+<blockquote>
+<p>The request backtrace returns a backtrace (or stacktrace)
+from the current execution state.
+When issuing a request a range of frames can be supplied.
+The top frame is frame number 0.
+If no frame range is supplied data for 10 frames will be returned.</p>
+</blockquote>
+<h4 id="arguments-9">Arguments</h4>
+<ul>
+<li><code>fromFrame</code>: Index of first frame to return</li>
+<li><code>toFrame</code>: Exclusive end of range</li>
+<li><code>bottom</code>: Boolean, set to true if the bottom of the stack is requested</li>
+</ul>
+<h4 id="response-9">Response</h4>
+<ul>
+<li><code>fromFrame</code>: First frame returned</li>
+<li><code>toFrame</code>: Actual last frame returned, might be less than requested <code>toFrame</code>
+when less frames are available.</li>
+<li><code>totalFrames</code>: Number of frames currently available</li>
+<li><code>frames</code>: Array of frames</li>
+</ul>
+<p>For the properties of each frame, see the <code>frame</code> request below.</p>
+<h4 id="examples-6">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;,&quot;arguments&quot;:{&quot;toFrame&quot;:2}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;,&quot;arguments&quot;:{&quot;fromFrame&quot;:0,&quot;toFrame&quot;:9}}
+</code></pre>
+<h3 id="request-frame-framerequest_">Request <code>frame</code> - <code>frameRequest_</code></h3>
+<blockquote>
+<p>The request frame selects a new selected frame
+and returns information for that.
+If no frame number is specified the selected frame is returned.</p>
+</blockquote>
+<h4 id="arguments-10">Arguments</h4>
+<ul>
+<li><code>number</code>: Optional, the frame to select</li>
+</ul>
+<h4 id="response-10">Response</h4>
+<ul>
+<li><code>index</code>: number</li>
+<li><code>receiver</code>: reference</li>
+<li><code>func</code>: reference</li>
+<li><code>script</code>: reference</li>
+<li><code>constructCall</code>: boolean</li>
+<li><code>atReturn</code>: boolean</li>
+<li><code>returnValue</code>: reference, only if <code>atReturn</code> is true</li>
+<li><code>debuggerFrame</code>: boolean</li>
+<li><code>arguments</code>: <code>Array[{name, value}]</code>, value is a reference</li>
+<li><code>locals</code>: Same as <code>arguments</code></li>
+<li><code>scopes</code>: <code>Array[{type, index}]</code>, both are numbers</li>
+</ul>
+<p>Valid scope types:</p>
+<pre><code class="language-js">var ScopeType = { Global: 0,
+                  Local: 1,
+                  With: 2,
+                  Closure: 3,
+                  Catch: 4,
+                  Block: 5,
+                  Script: 6 };
+</code></pre>
+<p><em>Reference: JSONProtocolSerializer.serializeFrame_</em></p>
+<h4 id="examples-7">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;frame&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;frame&quot;,&quot;arguments&quot;:{&quot;number&quot;:1}}
+
+</code></pre>
+<h3 id="request-scopes-scopesrequest_">Request <code>scopes</code> - <code>scopesRequest_</code></h3>
+<blockquote>
+<p>The request scopes returns all the scopes for a given frame.
+If no frame number is specified the selected frame is returned.</p>
+</blockquote>
+<h4 id="arguments-11">Arguments</h4>
+<p>A &quot;scope holder&quot;. This is either a stack frame or a function.
+From <code>resolveScopeHolder_</code>:</p>
+<blockquote>
+<p>Gets scope host object from request.
+It is either a function ('functionHandle' argument must be specified)
+or a stack frame ('frameNumber' may be specified
+and the current frame is taken by default).</p>
+</blockquote>
+<p>For function scopes:</p>
+<ul>
+<li><code>functionHandle</code>: number, retrieves function from mirror cache</li>
+</ul>
+<p>For stack frame scopes:</p>
+<ul>
+<li><code>frameNumber</code>: number, has to be a valid frame index.
+Defaults to currently selected stack frame if omitted.
+Stack frames are selected via the <code>frame</code> request.</li>
+</ul>
+<p>Additionally:</p>
+<ul>
+<li><code>inlineRefs</code>: boolean, if true <code>object</code> will be returned as a value
+rather than as a reference, see <code>scope</code> below.</li>
+</ul>
+<h4 id="response-11">Response</h4>
+<ul>
+<li><code>fromScope</code>: number, always 0</li>
+<li><code>toScope</code>: number, always number of scopes</li>
+<li><code>totalScopes</code>: number of scopes</li>
+<li><code>scopes</code>: Array, see <code>scope</code> below for properties</li>
+</ul>
+<h4 id="examples-8">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scopes&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scopes&quot;,&quot;arguments&quot;:{&quot;frameNumber&quot;:1}}
+
+</code></pre>
+<h3 id="request-scope-scoperequest_">Request <code>scope</code> - <code>scopeRequest_</code></h3>
+<blockquote>
+<p>The request scope returns information on a given scope for a given frame.
+If no frame number is specified the selected frame is used.</p>
+</blockquote>
+<h4 id="arguments-12">Arguments</h4>
+<p>A &quot;scope holder&quot; (see <code>scopes</code>) plus:</p>
+<ul>
+<li><code>number</code>: A valid scope index, defaults to 0 (top scope)</li>
+<li><code>inlineRefs</code>: boolean, if true <code>object</code> will be returned as a value
+rather than as a reference</li>
+</ul>
+<h4 id="response-12">Response</h4>
+<ul>
+<li><code>index</code>: index of this scope in the scope chain.
+Index 0 is the top scope and the global scope will always have
+the highest index for a frame <em>(from v8 wiki)</em>
+Confusingly the same value that is called <code>number</code> above.</li>
+<li><code>frameIndex</code>: The same thing called <code>frameNumber</code> above.</li>
+<li><code>type</code>: Scope type, see <code>frame</code> above</li>
+<li><code>object</code>: reference or value, an object representing the scope</li>
+</ul>
+<p>The <code>object</code> part depends on the special <code>inlineRefs</code> argument.</p>
+<h5 id="object-as-reference"><code>object</code> as reference</h5>
+<p>Will have just one property, <code>ref</code>, which is the mirror's handle.
+The object itself will be added to the <code>refs</code> part of the response.
+Every object added will later be serialized via <code>serializeReferencedObjects</code>.
+The serialization will exclude <code>details</code>
+which means that actual property values won't be included.
+In other words: For <code>scope</code> requests this is a poor fit.</p>
+<h5 id="object-as-value"><code>object</code> as value</h5>
+<p>This described the general structure of something serialized via
+<code>serialize_(obj, false, true)</code> - not as reference, with details.
+You can assume that a scope object should be an object.</p>
+<ul>
+<li><code>type</code>: string, type of mirror, see below for possible values.
+This is the only property for <code>'null'</code> and <code>'undefined'</code>.</li>
+<li><code>handle</code>: number, handle of the serialized mirror</li>
+</ul>
+<p>For <code>'boolean'</code>, <code>'number'</code>, <code>'string'</code>:</p>
+<ul>
+<li><code>value</code>: May be truncated for strings.</li>
+<li><code>length</code>: Only for strings, total length of string</li>
+<li><code>fromIndex</code>/<code>toIndex</code>: 0/length of truncated string.
+Not present if the string was returned in full.</li>
+</ul>
+<p>For <code>'object'</code>, <code>'function'</code>, <code>'regexp'</code>, <code>'error'</code> (see <code>serializeObject_</code>):</p>
+<ul>
+<li><code>className</code>: string, name of the class</li>
+<li><code>constructorFunction</code>: reference</li>
+<li><code>protoObject</code>: reference</li>
+<li><code>prototypeObject</code>: reference</li>
+<li><code>namedInterceptor</code>: boolean</li>
+<li><code>indexedInterceptor</code>: boolean</li>
+<li><code>properties</code>: Array of property descriptors</li>
+<li><code>internalProperties</code>: Array of property descriptors</li>
+</ul>
+<p>All references are serialized via <code>serializeReferenceWithDisplayData_</code>.
+See the properties section below.</p>
+<p>For <code>'function</code> only:</p>
+<ul>
+<li><code>name</code>: Name of the function</li>
+<li><code>inferredName</code>: &quot;Nice&quot; name of the function, not always available</li>
+<li><code>resolved</code>: boolean, source is available</li>
+<li><code>source</code>: The source of the function</li>
+<li><code>script</code>: Reference to the script where the function is defined</li>
+<li><code>scriptId</code>: Id of the script where the function is defined`</li>
+<li><code>line</code>/<code>column</code>: Position of the function definition in the script</li>
+<li><code>position</code>: Seems to be the same as <code>line</code>/<code>column</code></li>
+</ul>
+<p>If the object is a date object:</p>
+<ul>
+<li><code>value</code>: ?</li>
+</ul>
+<h6 id="properties">Properties</h6>
+<p>Each property is serialized based on <code>inlineRefs</code>.
+The serialization is handled by <code>serializeProperty_</code>.
+Property descriptors always have a <code>name</code> property.</p>
+<p>When <code>inlineRefs</code> is enabled then each descripor has a <code>value</code> property.
+It is filled using <code>serializeReferenceWithDisplayData_</code>:</p>
+<ul>
+<li><code>ref</code>: Handle of the mirror object</li>
+<li><code>type</code>: See below for possible types</li>
+<li><code>value</code>: For <code>'undefined'</code>, <code>'null'</code>, <code>'boolean'</code>, <code>'number'</code>, <code>'string'</code>,
+<code>'error'</code>, <code>'regexp'</code>.
+For <code>'string'</code> the value will be truncated.
+For <code>'error'</code> the value will be ?.</li>
+<li><code>name</code>: For <code>'function'</code> - name of the function</li>
+<li><code>inferredName</code>: For <code>'function'</code> - nice name of the function</li>
+<li><code>scriptId</code>: For <code>'function'</code> - Script where the function was defined</li>
+<li><code>className</code>: For <code>'object'</code> - name of the class</li>
+</ul>
+<p>Without <code>inlineRefs</code>, the property descriptor will only contain meta data:</p>
+<ul>
+<li><code>ref</code>: The property value's handle.</li>
+<li><code>attributes</code>: Signals if property is frozen/readOnly/etc..</li>
+<li><code>propertyType</code>: Only if it isn't a &quot;normal&quot; property.</li>
+</ul>
+<p>Possible values for property type are:</p>
+<pre><code class="language-js">// from mirror-debugger.js
+PropertyType.Normal                  = 0;
+PropertyType.Field                   = 1;
+PropertyType.Constant                = 2;
+PropertyType.Callbacks               = 3;
+PropertyType.Handler                 = 4;
+PropertyType.Interceptor             = 5;
+PropertyType.Transition              = 6;
+PropertyType.Nonexistent             = 7;
+
+</code></pre>
+<h6 id="values-for-type">Values for <code>type</code></h6>
+<pre><code class="language-js">// from mirror-debugger.js
+var UNDEFINED_TYPE = 'undefined';
+var NULL_TYPE = 'null';
+var BOOLEAN_TYPE = 'boolean';
+var NUMBER_TYPE = 'number';
+var STRING_TYPE = 'string';
+var OBJECT_TYPE = 'object';
+var FUNCTION_TYPE = 'function';
+var REGEXP_TYPE = 'regexp';
+var ERROR_TYPE = 'error';
+// ignore everything below, won't be retured
+var PROPERTY_TYPE = 'property';
+var INTERNAL_PROPERTY_TYPE = 'internalProperty';
+var FRAME_TYPE = 'frame';
+var SCRIPT_TYPE = 'script';
+var CONTEXT_TYPE = 'context';
+var SCOPE_TYPE = 'scope';
+
+</code></pre>
+<h4 id="examples-9">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scope&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scope&quot;,&quot;arguments&quot;:{&quot;frameNumber&quot;:1,&quot;number&quot;:1}}
+
+</code></pre>
+<h3 id="request-setvariablevalue-setvariablevaluerequest_">Request <code>setVariableValue</code> - <code>setVariableValueRequest_</code></h3>
+<h4 id="arguments-13">Arguments</h4>
+<ul>
+<li><code>scope</code>: Scope holder &amp; number</li>
+<li><code>name</code>: Name of the variable to set</li>
+<li><code>newValue</code>: The value to set the variable to</li>
+</ul>
+<p>The <code>scope</code> will be resolved via <code>resolveScopeHolder_</code>.
+It has to have a property <code>number</code> (the scope index).
+It may have a <code>functionHandle</code> property.
+If it has no <code>functionHandle</code>, it's considered a frame-based scope.
+In that case an optional <code>frameNumber</code> can be provided.</p>
+<p>The <code>newValue</code> will be resolved via <code>resolveValue_</code>.
+The following kinds of values are supported:</p>
+<ul>
+<li><code>handle</code>: A mirror's handle</li>
+<li><code>stringDescription</code>/<code>type</code>: The description will be parsed.
+Supported types are <code>'number'</code>, <code>'string'</code>,
+and <code>'boolean'</code>.</li>
+<li><code>value</code>: Just a value</li>
+<li><code>type</code>: Possible values are <code>'undefined'</code> or <code>'null'</code></li>
+</ul>
+<h4 id="response-13">Response</h4>
+<ul>
+<li><code>newValue</code>: A mirror object for the new value</li>
+</ul>
+<h3 id="request-evaluate-evaluaterequest_">Request <code>evaluate</code> - <code>evaluateRequest_</code></h3>
+<blockquote>
+<p>The request evaluate is used to evaluate an expression.
+Optional argument additional_context specifies handles
+that will be visible from the expression under corresponding names</p>
+</blockquote>
+<h4 id="arguments-14">Arguments</h4>
+<ul>
+<li><code>expression</code>:</li>
+<li><code>frame</code>:</li>
+<li><code>global</code>:</li>
+<li><code>disable_break</code>:</li>
+<li><code>additional_context</code>:</li>
+</ul>
+<h4 id="response-14">Response</h4>
+<p>The result of evaluating the expression.
+See <code>scope</code> above for what it looks like.</p>
+<h4 id="examples-10">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;1+2&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;a()&quot;,&quot;frame&quot;:3,&quot;disable_break&quot;:false}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;[o.a,o.b,o.c]&quot;,&quot;global&quot;:true,&quot;disable_break&quot;:true}}
+{&quot;seq&quot;:120,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;obj.toString()&quot;, &quot;additional_context&quot;: [{ &quot;name&quot;:&quot;obj&quot;,&quot;handle&quot;:25 }] }}
+
+</code></pre>
+<h3 id="request-lookup-lookuprequest_">Request <code>lookup</code> - <code>lookupRequest_</code></h3>
+<blockquote>
+<p>The request lookup is used to lookup objects based on their handle.</p>
+</blockquote>
+<h4 id="arguments-15">Arguments</h4>
+<ul>
+<li><code>handles</code>: Array of mirror handles (numbers)</li>
+<li><code>includeSource</code>: Include source of scripts (if mirrors are scripts)</li>
+</ul>
+<h4 id="response-15">Response</h4>
+<p>Mirror objects indexed by their handle.
+See <code>scope</code> for how each entry looks like.</p>
+<h4 id="examples-11">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;lookup&quot;,&quot;arguments&quot;:{&quot;handles&quot;:[1]}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;lookup&quot;,&quot;arguments&quot;:{&quot;handles&quot;:[7,12]}}
+
+</code></pre>
+<h3 id="request-references-referencesrequest_">Request <code>references</code> - <code>referencesRequest_</code></h3>
+<h4 id="arguments-16">Arguments</h4>
+<ul>
+<li><code>type</code>: Either &quot;referencedBy&quot; or &quot;constructedBy&quot;</li>
+<li><code>handle</code>: Object to find references for</li>
+</ul>
+<h4 id="response-16">Response</h4>
+<p>Array of referenced objects</p>
+<p>For <code>referencedBy</code>:</p>
+<blockquote>
+<p>Find all objects with direct references to this object.</p>
+</blockquote>
+<p>For <code>constructedBy</code>:</p>
+<blockquote>
+<p>Returns objects constructed by this function.</p>
+</blockquote>
+<h3 id="request-source-sourcerequest_">Request <code>source</code> - <code>sourceRequest_</code></h3>
+<blockquote>
+<p>The request source retrieves source code for a frame.
+It returns a number of source lines
+running from the fromLine to but not including the toLine,
+that is the interval is open on the &quot;to&quot; end.
+For example, requesting source from line 2 to 4 returns two lines (2 and 3).
+Also note that the line numbers are 0 based: the first line is line 0.</p>
+</blockquote>
+<h4 id="arguments-17">Arguments</h4>
+<ul>
+<li><code>frame</code>: Index of the frame, default: selected frame.
+Frames are selected with the <code>frame</code> request.</li>
+<li><code>fromLine</code>: First line to return, defaults to first line</li>
+<li><code>toLine</code>: First line not to return, defaults to the end of the script</li>
+</ul>
+<h4 id="response-17">Response</h4>
+<ul>
+<li><code>source</code>: The actual source code</li>
+<li><code>fromLine</code>: Actual first line returned</li>
+<li><code>toLine</code>: Actual first line not returned</li>
+<li><code>fromPosition</code>: First character index returned</li>
+<li><code>toPosition</code>: First character index not returned</li>
+<li><code>totalLines</code>: Total number of lines in the file</li>
+</ul>
+<h4 id="examples-12">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;source&quot;,&quot;arguments&quot;:{&quot;fromLine&quot;:10,&quot;toLine&quot;:20}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;source&quot;,&quot;arguments&quot;:{&quot;frame&quot;:2,&quot;fromLine&quot;:10,&quot;toLine&quot;:20}}
+
+</code></pre>
+<h3 id="request-scripts-scriptsrequest_">Request <code>scripts</code> - <code>scriptsRequest_</code></h3>
+<blockquote>
+<p>The request scripts retrieves active scripts from the VM.
+An active script is source code
+from which there is still live objects in the VM.
+This request will always force a full garbage collection in the VM.</p>
+</blockquote>
+<h4 id="arguments-18">Arguments</h4>
+<ul>
+<li><code>types</code>: Bitmask of script types to retrieve. Defaults to &quot;normal&quot; only.</li>
+<li><code>ids</code>: Filter by script ids, invalid ids are just ignored.
+Defaults to returning all scripts.</li>
+<li><code>includeSource</code>: Include <code>source</code> in the response, defaults to false</li>
+<li><code>filter</code>: If this looks like a number,
+only scripts with this script id will be returned.
+This might or might not be the same
+as just passing one id into <code>ids</code>.
+If it's a string,
+it will filter scripts by if the name contains the filter.</li>
+</ul>
+<p>Script types are:</p>
+<ul>
+<li><code>0</code>: Native scripts, in bitmask: <code>1 &lt;&lt; 0 = 1</code></li>
+<li><code>1</code>: Extension scripts, in bitmask: <code>bit 1 = 1 &lt;&lt; 1 = 2</code></li>
+<li><code>2</code>: Normal scripts, in bitmaks <code>bit 2 = 1 &lt;&lt; 2 = 4</code></li>
+</ul>
+<h4 id="response-18">Response</h4>
+<p>Array of script mirror objects.
+Descriptions where partially taken from the v8 wiki.</p>
+<ul>
+<li><code>name</code>: name of the script</li>
+<li><code>id</code>: id of the script</li>
+<li><code>lineOffset</code>: line offset within the containing resource</li>
+<li><code>columnOffset</code>: column offset within the containing resource</li>
+<li><code>lineCount</code>: number of lines in the script</li>
+<li><code>data</code>: optional data object added through the API</li>
+<li><code>source</code>: source of the script if includeSource was specified in the request</li>
+<li><code>sourceStart</code>: first 80 characters of the script
+if includeSource was not specified in the request</li>
+<li><code>sourceLength</code>: total length of the script in characters</li>
+<li><code>scriptType</code>: script type (see request for values)</li>
+<li><code>compilationType</code>: How was this script compiled.
+0 if script was compiled through the API
+1 if script was compiled through eval</li>
+<li><code>evalFromScript</code>: if &quot;compilationType&quot; is 1 this is the script
+from where eval was called</li>
+<li><code>evalFromLocation</code>: <code>{line,column}</code> if &quot;compilationType&quot; is 1
+this is the position in the script
+from where eval was called</li>
+<li><code>evalFromFunctionName</code>: If &quot;compilationType&quot; is 1 this is the function name
+from where eval was called</li>
+</ul>
+<h4 id="examples-13">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scripts&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scripts&quot;,&quot;arguments&quot;:{&quot;types&quot;:7}}
+
+</code></pre>
+<h3 id="request-threads-threadsrequest_">Request <code>threads</code> - <code>threadsRequest_</code></h3>
+<h4 id="arguments-19">Arguments</h4>
+<p><em>No arguments</em></p>
+<h4 id="response-19">Response</h4>
+<ul>
+<li><code>totalThreads</code>: Number of threads</li>
+<li><code>thread_info.id</code>: Id of the thread, number</li>
+<li><code>thread_info.current</code>: If the thread is the current one, boolean</li>
+</ul>
+<h3 id="request-suspend-suspendrequest_">Request <code>suspend</code> - <code>suspendRequest_</code></h3>
+<p>No arguments, no response. Pauses execution.
+The reverse of calling <code>continue</code> without arguments.</p>
+<h3 id="request-version-versionrequest_">Request <code>version</code> - <code>versionRequest_</code></h3>
+<blockquote>
+<p>The request version reports version of the running V8.</p>
+</blockquote>
+<h4 id="response-20">Response</h4>
+<ul>
+<li><code>V8Version</code>: The version of v8 the process is running</li>
+</ul>
+<h4 id="examples-14">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:1,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;version&quot;}
+{&quot;seq&quot;:134,&quot;request_seq&quot;:1,&quot;type&quot;:&quot;response&quot;,&quot;command&quot;:&quot;version&quot;,&quot;success&quot;:true,&quot;body&quot;:{&quot;V8Version&quot;:&quot;1.3.19 (candidate)&quot;},&quot;refs&quot;:[],&quot;running&quot;:false}
+
+</code></pre>
+<h3 id="request-changelive-changeliverequest_">Request <code>changelive</code> - <code>changeLiveRequest_</code></h3>
+<p>The juicy parts can be found in <code>liveedit-debugger.js</code>.</p>
+<h4 id="arguments-20">Arguments</h4>
+<ul>
+<li><code>script_id</code>: Id of the script to change</li>
+<li><code>preview_only</code>: Do a dry run without actually changing the source</li>
+<li><code>new_source</code>: The new source code for the script</li>
+</ul>
+<h4 id="response-21">Response</h4>
+<ul>
+<li><code>change_log</code>: ?</li>
+<li><code>result.stack_modified</code>: Changes affect one of the current stack frames</li>
+<li><code>result.change_tree</code>: Tree of changes</li>
+<li><code>result.textual_diff.old_len</code>: Length of old source code</li>
+<li><code>result.textual_diff.new_len</code>: Length of new source code</li>
+<li><code>result.textual_diff.chunks</code>: Changed chunks</li>
+<li><code>result.updated</code>: True if any change was made</li>
+<li><code>result.created_script_name</code>: Sometimes the diff algorithm needs to create
+a copy of the old script.</li>
+<li><code>result.stack_update_needs_step_in</code>: Same as <code>stack_modified</code></li>
+<li><code>stepin_recommended</code>: true if <code>stack_update_needs_step_in</code>
+and the VM isn't currently paused.
+Will not be set for preview requests.</li>
+</ul>
+<h3 id="request-restartframe-restartframerequest_">Request <code>restartframe</code> - <code>restartFrameRequest_</code></h3>
+<p>The juicy parts can be found in <code>liveedit-debugger.js</code>.</p>
+<p><em>Warning:</em> This is one of the few functions
+where empty arguments are required to be passed in as <code>{}</code>
+instead of not sending anything.</p>
+<h4 id="arguments-21">Arguments</h4>
+<ul>
+<li><code>frame</code>: Valid stack frame or undefined for the selected frame.</li>
+</ul>
+<h4 id="response-22">Response</h4>
+<ul>
+<li><code>result.stack_update_needs_step_in</code>: Always true</li>
+</ul>
+<h3 id="request-flags-debuggerflagsrequest_">Request <code>flags</code> - <code>debuggerFlagsRequest_</code></h3>
+<p><em>Warning:</em> This is one of the few functions
+where empty arguments are required to be passed in as <code>{}</code>
+instead of not sending anything.</p>
+<p>Known flags:</p>
+<ul>
+<li><em>breakPointsActive</em></li>
+<li><em>breakOnCaughtException</em></li>
+<li><em>breakOnUncaughtException</em></li>
+</ul>
+<h4 id="arguments-22">Arguments</h4>
+<ul>
+<li><code>flags</code>: Pair of <code>name</code> and <code>value</code>.
+The value is optional, if it is provided the flag will be updated.
+Filters which flags are returned.
+If omitted, all flags are returned.
+Invalid or unknown flags are gracefully ignored.</li>
+</ul>
+<h4 id="response-23">Response</h4>
+<ul>
+<li><code>flags</code>: Array of flags, same pair of <code>name</code> and <code>value</code> as above.
+If no <code>flags</code> were passed in,
+this will return all current flag values.</li>
+</ul>
+<h3 id="request-v8flags-v8flagsrequest_">Request <code>v8flags</code> - <code>v8FlagsRequest_</code></h3>
+<blockquote>
+<p>The request v8flags is a request to apply the specified v8 flags (analogous to how they are specified on the command line).</p>
+</blockquote>
+<p><em>Warning:</em> This is one of the few functions
+where empty arguments are required to be passed in as <code>{}</code>
+instead of not sending anything.</p>
+<h4 id="arguments-23">Arguments</h4>
+<ul>
+<li><code>flags</code>: A string with command line flags, defaults to empty string.</li>
+</ul>
+<h4 id="response-24">Response</h4>
+<p><em>No response</em></p>
+<h4 id="examples-15">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;v8flags&quot;,&quot;arguments&quot;:{&quot;flags&quot;:&quot;--trace_gc —-always_compact&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; v8flags&quot;,&quot;arguments&quot;:{&quot;flags&quot;:&quot;--notrace_gc&quot;}}
+
+</code></pre>
+<h3 id="request-gc-gcrequest_">Request <code>gc</code> - <code>gcRequest_</code></h3>
+<blockquote>
+<p>The request gc is a request to run the garbage collector in the debuggee.
+In response, the debuggee will run the specified GC type.</p>
+</blockquote>
+<p><em>Warning:</em> This is one of the few functions
+where empty arguments are required to be passed in as <code>{}</code>
+instead of not sending anything.</p>
+<h4 id="arguments-24">Arguments</h4>
+<ul>
+<li><code>type</code>: Defaults to &quot;all&quot;</li>
+</ul>
+<p>As for available types, to quote <code>runtime.cc</code>:</p>
+<blockquote>
+<p>Presently, it only does a full GC.</p>
+</blockquote>
+<h4 id="response-25">Response</h4>
+<ul>
+<li><code>before</code>: Heap usage before, integer</li>
+<li><code>after</code>: Heap usage after, integer</li>
+</ul>
+<h4 id="examples-16">Examples</h4>
+<pre><code class="language-js">{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;gc&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;}}
+
+</code></pre>
+<h2 id="events">Events</h2>
+<p>Each event name is followed by the name of the event class
+in <code>debug-debugger.js</code>.
+The number in front is the v8-internal enum value of the event.
+The representation of the event body is determined
+by the method <code>toJSONProtocol</code> of the event class.</p>
+<p>All examples omit the wrapping message and only show the <code>body</code>.
+We'll also show the parsed body - JSON with slightly less quotes.
+For completeness' sake here one relatively complete event frame:</p>
+<pre><code>Content-Length: 78\r\n
+\r\n
+{&quot;seq&quot;:42,&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;beforeCompile&quot;,&quot;body&quot;:{&quot;script&quot;:{&quot;id&quot;:&quot;1&quot;}}}
+
+</code></pre>
+<h3 id="1-event-break-breakevent">1: Event <code>break</code> - <code>BreakEvent</code></h3>
+<h4 id="event-body">Event Body</h4>
+<ul>
+<li><code>invocationText</code>: Text representation of the top stack frame</li>
+<li><code>script</code>: Script in which the break occured</li>
+<li><code>sourceLineText</code>: Source code of the line where execution stopped</li>
+<li><code>sourceLine</code>/<code>sourceColumn</code>: Position in the script</li>
+<li><code>breakpoints</code>: Array of ids of breakpoints that caused the break</li>
+</ul>
+<h4 id="examples-17">Examples</h4>
+<pre><code class="language-js">{ invocationText: '#&lt;Object&gt;.[anonymous](exports=#&lt;Object&gt;, require=function require(path) {\n    return self.require(path);\n  }, module=#&lt;Module&gt;, __filename=/full/path/to/test/buggers/breakpoint.js, __dirname=/full/path/to/test/buggers)',
+  sourceLine: 16,
+  sourceColumn: 2,
+  sourceLineText: '})();',
+  script: 
+   { id: 46,
+     name: '/full/path/to/test/buggers/breakpoint.js',
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 19 },
+  breakpoints: [ 1 ] }
+
+</code></pre>
+<h3 id="2-event-exception-exceptionevent">2: Event <code>exception</code> - <code>ExceptionEvent</code></h3>
+<h4 id="event-body-2">Event Body</h4>
+<ul>
+<li><code>invocationText</code>: Text representation of the top stack frame</li>
+<li><code>script</code>: Script in which the break occured</li>
+<li><code>sourceLineText</code>: Source code of the line where execution stopped</li>
+<li><code>sourceLine</code>/<code>sourceColumn</code>: Position in the script.
+<code>sourceLine</code> may be -1 if there's no valid stack frame.</li>
+<li><code>uncaught</code>: true if this was an uncaught exception</li>
+<li><code>exception</code>: The exception object</li>
+</ul>
+<h4 id="examples-18">Examples</h4>
+<pre><code class="language-js">{ uncaught: false,
+  exception: 
+   { handle: 0,
+     type: 'error',
+     className: 'Error',
+     constructorFunction: { ref: 4 },
+     protoObject: { ref: 5 },
+     prototypeObject: { ref: 6 },
+     properties: [
+      { name: 'stack', attributes: 2, propertyType: 3, ref: 6 },
+      { name: 'arguments', attributes: 2, propertyType: 1, ref: 6 },
+      { name: 'type', attributes: 2, propertyType: 1, ref: 6 },
+      { name: 'message', attributes: 2, propertyType: 1, ref: 7 } ],
+     text: 'Error: err message' },
+  sourceLine: 3,
+  sourceColumn: 10,
+  sourceLineText: '    throw new Error(\'err message\');',
+  script: 
+   { id: 46,
+     name: '/full/path/to/test/buggers/throws.js',
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 12 } }
+
+</code></pre>
+<h3 id="3-event-newfunctionevent">3: Event <code>?</code> - <code>NewFunctionEvent</code></h3>
+<p><em>Not exposed in any obvious way</em></p>
+<h3 id="4-event-beforecompile-compileevent">4: Event <code>beforeCompile</code> - <code>CompileEvent</code></h3>
+<h4 id="event-body-3">Event Body</h4>
+<p><em>See: afterCompile</em></p>
+<h3 id="5-event-aftercompile-compileevent">5: Event <code>afterCompile</code> - <code>CompileEvent</code></h3>
+<ul>
+<li><code>script</code>: The script that was compiled</li>
+</ul>
+<h4 id="examples-19">Examples</h4>
+<pre><code class="language-js">{ script: 
+   { handle: 1,
+     type: 'script',
+     name: 'node.js',
+     id: 30,
+     lineOffset: 0,
+     columnOffset: 0,
+     lineCount: 903,
+     sourceStart: '// Copyright Joyent, Inc. and other Node contributors.\n//\n// Permission is hereb',
+     sourceLength: 28135,
+     scriptType: 2,
+     compilationType: 0,
+     context: { ref: 0 },
+     text: 'node.js (lines: 903)' } }
+
+</code></pre>
+<h3 id="6-event-scriptcollected-scriptcollectedevent">6: Event <code>scriptCollected</code> - <code>ScriptCollectedEvent</code></h3>
+<p>Emitted when a script is no longer referenced and was collected.</p>
+<h4 id="event-body-4">Event Body</h4>
+<p><em>See: afterCompile</em></p>
+<h3 id="7-event">7: Event ?</h3>
+<p><em>BreakForCommand, defined in v8-debug.h</em></p>
+<h2 id="response-object-serialization">Response object serialization</h2>
+<p><em>For now see <code>scope</code></em></p>
+<pre><code class="language-js">// From mirror-debugger.js
+// Mirror hierarchy:
+//   - Mirror
+//     - ValueMirror
+//       - UndefinedMirror
+//       - NullMirror
+//       - NumberMirror
+//       - StringMirror
+//       - ObjectMirror
+//         - FunctionMirror
+//           - UnresolvedFunctionMirror
+//         - ArrayMirror
+//         - DateMirror
+//         - RegExpMirror
+//         - ErrorMirror
+//     - PropertyMirror
+//     - InternalPropertyMirror
+//     - FrameMirror
+//     - ScriptMirror
+
+</code></pre>
+<h2 id="important-links">Important links</h2>
+<p>Original author in the v8 wiki:</p>
+<ul>
+<li>https://code.google.com/u/mikhail.naganov/</li>
+</ul>
+<p>Page in the v8 wiki:</p>
+<ul>
+<li>https://code.google.com/p/v8/wiki/DebuggerProtocol</li>
+</ul>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/jie-jue-an-zhuo-linux-adb-lian-jie-ji-qi-ti-shi-no-permissions-de-wen-ti">
+              <h3 class="post-title">
+                解决安卓-linux-adb-连接机器提示no-permissions的问题
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

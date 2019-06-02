@@ -1,0 +1,864 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>3.17.12版本v8调试协议 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              3.17.12版本v8调试协议
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
+<!-- more -->
+<h1 id="31712版本v8调试协议">3.17.12版本v8调试协议</h1>
+<p>V8 has support for debugging the JavaScript code running in it. There are two API's for this a function based API using JavaScript objects and a message based API using a JSON based protocol. The function based API can be used by an in-process debugger agent, whereas the message based API can be used out of process as well.</p>
+<p>The debugger protocol is based on <a href="http://www.json.org/">JSON</a>). Each protocol packet is defined in terms of JSON and is transmitted as a string value. All packets have two basic elements <code>seq</code> and <code>type</code>.</p>
+<pre><code>{ &quot;seq&quot;     : &lt;number&gt;,
+  &quot;type&quot;    : &lt;type&gt;,
+  ...
+}
+</code></pre>
+<p>The element <code>seq</code> holds the sequence number of the packet. And element type is the type of the packet. The type is a string value with one of the following values <code>&quot;request&quot;</code>, <code>&quot;response&quot;</code> or <code>&quot;event&quot;</code>.</p>
+<p>A <code>&quot;request&quot;</code> packet has the following structure:</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &lt;command&gt;
+  &quot;arguments&quot; : ...
+}
+</code></pre>
+<p>A <code>&quot;response&quot;</code> packet has the following structure. If <code>success</code> is true <code>body</code> will contain the response data. If <code>success</code> is false <code>message</code> will contain an error message.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &lt;command&gt;
+  &quot;body&quot;        : ...
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : &lt;boolean indicating success&gt;
+  &quot;message&quot;     : &lt;if command failed this property contains an error message&gt;
+}
+</code></pre>
+<p>An <code>&quot;event&quot;</code> packet has the following structure:</p>
+<pre><code>{ &quot;seq&quot;     : &lt;number&gt;,
+  &quot;type&quot;    : &quot;event&quot;,
+  &quot;event&quot;   : &lt;event name&gt;
+  body      : ...
+}
+</code></pre>
+<h1 id="requestresponse-pairs">Request/response pairs</h1>
+<h2 id="request-continue">Request <code>continue</code></h2>
+<p>The request <code>continue</code> is a request from the debugger to start the VM running again. As part of the <code>continue</code> request the debugger can specify if it wants the VM to perform a single step action.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;continue&quot;,
+  &quot;arguments&quot; : { &quot;stepaction&quot; : &lt;&quot;in&quot;, &quot;next&quot; or &quot;out&quot;&gt;,
+                  &quot;stepcount&quot;  : &lt;number of steps (default 1)&gt;
+                }
+}
+</code></pre>
+<p>In the response the property <code>running</code> will always be true as the VM will be running after executing the <code>continue</code> command. If a single step action is requested the VM will respond with a <code>break</code> event after running the step.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;continue&quot;,
+  &quot;running&quot;     : true
+  &quot;success&quot;     : true
+}
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;,&quot;arguments&quot;:{&quot;stepaction&quot;:&quot;out&quot;}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;continue&quot;,&quot;arguments&quot;:{&quot;stepaction&quot;:&quot;next&quot;,&quot;stepcount&quot;:5}}
+</code></pre>
+<h2 id="request-evaluate">Request <code>evaluate</code></h2>
+<p>The request <code>evaluate</code> is used to evaluate an expression. The body of the result is as described in response object serialization below.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;evaluate&quot;,
+  &quot;arguments&quot; : { &quot;expression&quot;    : &lt;expression to evaluate&gt;,
+                  &quot;frame&quot;         : &lt;number&gt;,
+                  &quot;global&quot;        : &lt;boolean&gt;,
+                  &quot;disable_break&quot; : &lt;boolean&gt;,
+                  &quot;additional_context&quot; : [
+                       { &quot;name&quot; : &lt;name1&gt;, &quot;handle&quot; : &lt;handle1&gt; },
+                       { &quot;name&quot; : &lt;name2&gt;, &quot;handle&quot; : &lt;handle2&gt; },
+                       ... 
+                  ]
+                }
+}
+</code></pre>
+<p>Optional argument <code>additional_context</code> specifies handles that will be visible from the expression under corresponding names (see example below).</p>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;evaluate&quot;,
+  &quot;body&quot;        : ...
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;1+2&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;a()&quot;,&quot;frame&quot;:3,&quot;disable_break&quot;:false}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;[o.a,o.b,o.c]&quot;,&quot;global&quot;:true,&quot;disable_break&quot;:true}}
+{&quot;seq&quot;:120,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;evaluate&quot;,&quot;arguments&quot;:{&quot;expression&quot;:&quot;obj.toString()&quot;, &quot;additional_context&quot;: [{ &quot;name&quot;:&quot;obj&quot;,&quot;handle&quot;:25 }] }}
+</code></pre>
+<h2 id="request-lookup">Request <code>lookup</code></h2>
+<p>The request <code>lookup</code> is used to lookup objects based on their handle. The individual array elements of the body of the result is as described in response object serialization below.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;lookup&quot;,
+  &quot;arguments&quot; : { &quot;handles&quot;       : &lt;array of handles&gt;,
+                  &quot;includeSource&quot; : &lt;boolean indicating whether the source will be included when script objects are returned&gt;,
+                }
+}
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;lookup&quot;,
+  &quot;body&quot;        : &lt;array of serialized objects indexed using their handle&gt;
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;lookup&quot;,&quot;arguments&quot;:{&quot;handles&quot;:&quot;[1]&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;lookup&quot;,&quot;arguments&quot;:{&quot;handles&quot;:&quot;[7,12]&quot;}}
+</code></pre>
+<h2 id="request-backtrace">Request <code>backtrace</code></h2>
+<p>The request <code>backtrace</code> returns a backtrace (or stacktrace) from the current execution state. When issuing a request a range of frames can be supplied. The top frame is frame number 0. If no frame range is supplied data for 10 frames will be returned.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;backtrace&quot;,
+  &quot;arguments&quot; : { &quot;fromFrame&quot; : &lt;number&gt;
+                  &quot;toFrame&quot; : &lt;number&gt;
+                  &quot;bottom&quot; : &lt;boolean, set to true if the bottom of the stack is requested&gt;
+                }
+}
+</code></pre>
+<p>The response contains the frame data together with the actual frames returned and the toalt frame count.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;backtrace&quot;,
+  &quot;body&quot;        : { &quot;fromFrame&quot; : &lt;number&gt;
+                    &quot;toFrame&quot; : &lt;number&gt;
+                    &quot;totalFrames&quot; : &lt;number&gt;
+                    &quot;frames&quot; : &lt;array of frames - see frame request for details&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+</code></pre>
+<p>If there are no stack frames the result body only contains <code>totalFrames</code> with a value of <code>0</code>. When an exception event is generated due to compilation failures it is possible that there are no stack frames.</p>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;,&quot;arguments&quot;:{&quot;toFrame&quot;:2}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;backtrace&quot;,&quot;arguments&quot;:{&quot;fromFrame&quot;:0,&quot;toFrame&quot;:9}}
+</code></pre>
+<h2 id="request-frame">Request <code>frame</code></h2>
+<p>The request frame selects a new selected frame and returns information for that. If no frame number is specified the selected frame is returned.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;frame&quot;,
+  &quot;arguments&quot; : { &quot;number&quot; : &lt;frame number&gt;
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;frame&quot;,
+  &quot;body&quot;        : { &quot;index&quot;          : &lt;frame number&gt;,
+                    &quot;receiver&quot;       : &lt;frame receiver&gt;,
+                    &quot;func&quot;           : &lt;function invoked&gt;,
+                    &quot;script&quot;         : &lt;script for the function&gt;,
+                    &quot;constructCall&quot;  : &lt;boolean indicating whether the function was called as constructor&gt;,
+                    &quot;debuggerFrame&quot;  : &lt;boolean indicating whether this is an internal debugger frame&gt;,
+                    &quot;arguments&quot;      : [ { name: &lt;name of the argument - missing of anonymous argument&gt;,
+                                           value: &lt;value of the argument&gt;
+                                         },
+                                         ... &lt;the array contains all the arguments&gt;
+                                       ],
+                    &quot;locals&quot;         : [ { name: &lt;name of the local variable&gt;,
+                                           value: &lt;value of the local variable&gt;
+                                         },
+                                         ... &lt;the array contains all the locals&gt;
+                                       ],
+                    &quot;position&quot;       : &lt;source position&gt;,
+                    &quot;line&quot;           : &lt;source line&gt;,
+                    &quot;column&quot;         : &lt;source column within the line&gt;,
+                    &quot;sourceLineText&quot; : &lt;text for current source line&gt;,
+                    &quot;scopes&quot;         : [ &lt;array of scopes, see scope request below for format&gt; ],
+
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;frame&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;frame&quot;,&quot;arguments&quot;:{&quot;number&quot;:1}}
+
+</code></pre>
+<h2 id="request-scope">Request <code>scope</code></h2>
+<p>The request scope returns information on a givne scope for a givne frame. If no frame number is specified the selected frame is used.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;scope&quot;,
+  &quot;arguments&quot; : { &quot;number&quot; : &lt;scope number&gt;
+                  &quot;frameNumber&quot; : &lt;frame number, optional uses selected frame if missing&gt;
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;scope&quot;,
+  &quot;body&quot;        : { &quot;index&quot;      : &lt;index of this scope in the scope chain. Index 0 is the top scope
+                                    and the global scope will always have the highest index for a
+                                    frame&gt;,
+                    &quot;frameIndex&quot; : &lt;index of the frame&gt;,
+                    &quot;type&quot;       : &lt;type of the scope:
+                                     0: Global
+                                     1: Local
+                                     2: With
+                                     3: Closure
+                                     4: Catch &gt;,
+                    &quot;object&quot;     : &lt;the scope object defining the content of the scope.
+                                    For local and closure scopes this is transient objects,
+                                    which has a negative handle value&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scope&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scope&quot;,&quot;arguments&quot;:{&quot;frameNumber&quot;:1,&quot;number&quot;:1}}
+
+</code></pre>
+<h2 id="request-scopes">Request <code>scopes</code></h2>
+<p>The request scopes returns all the scopes for a given frame. If no frame number is specified the selected frame is returned.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;scopes&quot;,
+  &quot;arguments&quot; : { &quot;frameNumber&quot; : &lt;frame number, optional uses selected frame if missing&gt;
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;scopes&quot;,
+  &quot;body&quot;        : { &quot;fromScope&quot; : &lt;number of first scope in response&gt;,
+                    &quot;toScope&quot;   : &lt;number of last scope in response&gt;,
+                    &quot;totalScopes&quot; : &lt;total number of scopes for this frame&gt;,
+                    &quot;scopes&quot; : [ &lt;array of scopes, see scope request above for format&gt; ],
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scopes&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scopes&quot;,&quot;arguments&quot;:{&quot;frameNumber&quot;:1}}
+
+</code></pre>
+<h2 id="request-scripts">Request <code>scripts</code></h2>
+<p>The request <code>scripts</code> retrieves active scripts from the VM. An active script is source code from which there is still live objects in the VM. This request will always force a full garbage collection in the VM.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;scripts&quot;,
+  &quot;arguments&quot; : { &quot;types&quot;         : &lt;types of scripts to retrieve
+                                       set bit 0 for native scripts
+                                       set bit 1 for extension scripts
+                                       set bit 2 for normal scripts
+                                     (default is 4 for normal scripts)&gt;
+                  &quot;ids&quot;           : &lt;array of id's of scripts to return. If this is not specified all scripts are requrned&gt;
+                  &quot;includeSource&quot; : &lt;boolean indicating whether the source code should be included for the scripts returned&gt;
+                  &quot;filter&quot;        : &lt;string or number: filter string or script id.
+                                     If a number is specified, then only the script with the same number as its script id will be retrieved.
+                                     If a string is specified, then only scripts whose names contain the filter string will be retrieved.&gt;
+                }
+}
+
+</code></pre>
+<p>The request contains an array of the scripts in the VM. This information includes the relative location of the script within the containing resource.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;scripts&quot;,
+  &quot;body&quot;        : [ { &quot;name&quot;             : &lt;name of the script&gt;,
+                      &quot;id&quot;               : &lt;id of the script&gt;
+                      &quot;lineOffset&quot;       : &lt;line offset within the containing resource&gt;
+                      &quot;columnOffset&quot;     : &lt;column offset within the containing resource&gt;
+                      &quot;lineCount&quot;        : &lt;number of lines in the script&gt;
+                      &quot;data&quot;             : &lt;optional data object added through the API&gt;
+                      &quot;source&quot;           : &lt;source of the script if includeSource was specified in the request&gt;
+                      &quot;sourceStart&quot;      : &lt;first 80 characters of the script if includeSource was not specified in the request&gt;
+                      &quot;sourceLength&quot;     : &lt;total length of the script in characters&gt;
+                      &quot;scriptType&quot;       : &lt;script type (see request for values)&gt;
+                      &quot;compilationType&quot;  : &lt; How was this script compiled:
+                                               0 if script was compiled through the API
+                                               1 if script was compiled through eval
+                                            &gt;
+                      &quot;evalFromScript&quot;   : &lt;if &quot;compilationType&quot; is 1 this is the script from where eval was called&gt;
+                      &quot;evalFromLocation&quot; : { line   : &lt; if &quot;compilationType&quot; is 1 this is the line in the script from where eval was called&gt;
+                                             column : &lt; if &quot;compilationType&quot; is 1 this is the column in the script from where eval was called&gt;
+                  ]
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scripts&quot;}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;scripts&quot;,&quot;arguments&quot;:{&quot;types&quot;:7}}
+
+</code></pre>
+<h2 id="request-source">Request <code>source</code></h2>
+<p>The request <code>source</code> retrieves source code for a frame. It returns a number of source lines running from the <code>fromLine</code> to but not including the <code>toLine</code>, that is the interval is open on the &quot;to&quot; end. For example, requesting source from line 2 to 4 returns two lines (2 and 3). Also note that the line numbers are 0 based: the first line is line 0.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;source&quot;,
+  &quot;arguments&quot; : { &quot;frame&quot;    : &lt;frame number (default selected frame)&gt;
+                  &quot;fromLine&quot; : &lt;from line within the source default is line 0&gt;
+                  &quot;toLine&quot;   : &lt;to line within the source this line is not included in
+                                the result default is the number of lines in the script&gt;
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;source&quot;,
+  &quot;body&quot;        : { &quot;source&quot;       : &lt;the source code&gt;
+                    &quot;fromLine&quot;     : &lt;actual from line within the script&gt;
+                    &quot;toLine&quot;       : &lt;actual to line within the script this line is not included in the source&gt;
+                    &quot;fromPosition&quot; : &lt;actual start position within the script&gt;
+                    &quot;toPosition&quot;   : &lt;actual end position within the script&gt;
+                    &quot;totalLines&quot;   : &lt;total lines in the script&gt;
+                }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;source&quot;,&quot;arguments&quot;:{&quot;fromLine&quot;:10,&quot;toLine&quot;:20}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;source&quot;,&quot;arguments&quot;:{&quot;frame&quot;:2,&quot;fromLine&quot;:10,&quot;toLine&quot;:20}}
+
+</code></pre>
+<h2 id="request-setbreakpoint">Request <code>setbreakpoint</code></h2>
+<p>The request <code>setbreakpoint</code> creates a new break point. This request can be used to set both function and script break points. A function break point sets a break point in an existing function whereas a script break point sets a break point in a named script. A script break point can be set even if the named script is not found.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;setbreakpoint&quot;,
+  &quot;arguments&quot; : { &quot;type&quot;        : &lt;&quot;function&quot; or &quot;script&quot; or &quot;scriptId&quot; or &quot;scriptRegExp&quot;&gt;
+                  &quot;target&quot;      : &lt;function expression or script identification&gt;
+                  &quot;line&quot;        : &lt;line in script or function&gt;
+                  &quot;column&quot;      : &lt;character position within the line&gt;
+                  &quot;enabled&quot;     : &lt;initial enabled state. True or false, default is true&gt;
+                  &quot;condition&quot;   : &lt;string with break point condition&gt;
+                  &quot;ignoreCount&quot; : &lt;number specifying the number of break point hits to ignore, default value is 0&gt;
+                }
+}
+
+</code></pre>
+<p>The result of the <code>setbreakpoint</code> request is a response with the number of the newly created break point. This break point number is used in the <code>changebreakpoint</code> and <code>clearbreakpoint</code> requests.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;setbreakpoint&quot;,
+  &quot;body&quot;        : { &quot;type&quot;       : &lt;&quot;function&quot; or &quot;script&quot;&gt;
+                    &quot;breakpoint&quot; : &lt;break point number of the new break point&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function,&quot;target&quot;:&quot;f&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{type:&quot;script&quot;,&quot;target&quot;:&quot;test.js&quot;,&quot;line&quot;:100}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function,&quot;target&quot;:&quot;f&quot;,&quot;condition&quot;:&quot;i &gt; 7&quot;}}
+
+</code></pre>
+<h2 id="request-changebreakpoint">Request <code>changebreakpoint</code></h2>
+<p>The request <code>changebreakpoint</code> changes the status of a break point.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;changebreakpoint&quot;,
+  &quot;arguments&quot; : { &quot;breakpoint&quot;  : &lt;number of the break point to clear&gt;
+                  &quot;enabled&quot;     : &lt;initial enabled state. True or false, default is true&gt;
+                  &quot;condition&quot;   : &lt;string with break point condition&gt;
+                  &quot;ignoreCount&quot; : &lt;number specifying the number of break point hits            }
+}
+
+</code></pre>
+<h2 id="request-clearbreakpoint">Request <code>clearbreakpoint</code></h2>
+<p>The request <code>clearbreakpoint</code> clears a break point.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;clearbreakpoint&quot;,
+  &quot;arguments&quot; : { &quot;breakpoint&quot; : &lt;number of the break point to clear&gt;
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;clearbreakpoint&quot;,
+  &quot;body&quot;        : { &quot;type&quot;       : &lt;&quot;function&quot; or &quot;script&quot;&gt;
+                    &quot;breakpoint&quot; : &lt;number of the break point cleared&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;clearbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;function,&quot;breakpoint&quot;:1}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;clearbreakpoint&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;script&quot;,&quot;breakpoint&quot;:2}}
+
+</code></pre>
+<h2 id="request-setexceptionbreak">Request <code>setexceptionbreak</code></h2>
+<p>The request <code>setexceptionbreak</code> is a request to enable/disable breaks on all / uncaught exceptions.  If the &quot;enabled&quot; argument is not specify, the debuggee will toggle the state of the specified break type.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;setexceptionbreak&quot;,
+  &quot;arguments&quot; : { &quot;type&quot;    : &lt;string: &quot;all&quot;, or &quot;uncaught&quot;&gt;,
+                  &quot;enabled&quot; : &lt;optional bool: enables the break type if true&gt;
+                }
+}
+
+</code></pre>
+<p>In response, the break on exception property of the debuggee will be set accordingly, and the following response message will be dispatched to the debugger.</p>
+<pre><code>{ &quot;seq&quot;               : &lt;number&gt;,
+  &quot;type&quot;              : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;setexceptionbreak&quot;,
+  “body”        : { &quot;type&quot;    : &lt;string: &quot;all&quot; or &quot;uncaught&quot; corresponding to the request.&gt;,
+                    &quot;enabled&quot; : &lt;bool: true if the break type is currently enabled as a result of the request&gt;
+                  }
+  &quot;running&quot;     : true
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a few examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;,”enabled”:false}}
+{&quot;seq&quot;:119,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; setexceptionbreak&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;uncaught&quot;,&quot;enabled&quot;:true}}
+
+</code></pre>
+<h2 id="request-v8flags">Request <code>v8flags</code></h2>
+<p>The request v8flags is a request to apply the specified v8 flags (analogous to how they are specified on the command line).</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;v8flags&quot;,
+  &quot;arguments&quot; : { &quot;flags&quot; : &lt;string: a sequence of v8 flags just like those used on the command line&gt;
+                }
+}
+
+</code></pre>
+<p>In response, the specified flags will be applied in the debuggee if they are legal flags.  Their effects vary depending on the implementation of the flag.</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;v8flags&quot;,
+  &quot;running&quot;     : true
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here are a few examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;v8flags&quot;,&quot;arguments&quot;:{&quot;flags&quot;:&quot;--trace_gc —always_compact&quot;}}
+{&quot;seq&quot;:118,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot; v8flags&quot;,&quot;arguments&quot;:{&quot;flags&quot;:&quot;--notrace_gc&quot;}}
+
+</code></pre>
+<h2 id="request-version">Request <code>version</code></h2>
+<p>The request <code>version</code> reports version of the running V8.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;version&quot;,
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;type&quot;        : &quot;request&quot;,
+  &quot;body&quot;        : { &quot;V8Version&quot;:   &lt;string, version of V8&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here is an example.</p>
+<pre><code>{&quot;seq&quot;:1,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;version&quot;}
+{&quot;seq&quot;:134,&quot;request_seq&quot;:1,&quot;type&quot;:&quot;response&quot;,&quot;command&quot;:&quot;version&quot;,&quot;success&quot;:true,&quot;body&quot;:{&quot;V8Version&quot;:&quot;1.3.19 (candidate)&quot;},&quot;refs&quot;:[],&quot;running&quot;:false}
+
+</code></pre>
+<h2 id="request-disconnect">Request <code>disconnect</code></h2>
+<p>The request <code>disconnect</code> is used to detach the remote debugger from the debuggee.  This will trigger the debuggee to disable all active breakpoints and resumes execution if the debuggee was previously stopped at a break.</p>
+<pre><code>{ &quot;seq&quot;     : &lt;number&gt;,
+  &quot;type&quot;    : &quot;request&quot;,
+  &quot;command&quot; : &quot;disconnect&quot;,
+}
+
+</code></pre>
+<p>The only response for the <code>disconnect</code> request is the response to a connect request if the debugger is still able to get a response before the debuggee successfully disconnects.</p>
+<p>Here is an examples:</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;disconnect&quot;}
+
+</code></pre>
+<h2 id="request-gc">Request <code>gc</code></h2>
+<p>The request <code>gc</code> is a request to run the garbage collector in the debuggee.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;gc&quot;,
+  &quot;arguments&quot; : { &quot;type&quot; : &lt;string: &quot;all&quot;&gt;,
+                }
+}
+
+</code></pre>
+<p>In response, the debuggee will run the specified GC type and send the following response message:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;gc&quot;,
+  “body”        : { &quot;before&quot; : &lt;int: total heap usage in bytes before the GC&gt;,
+                    &quot;after&quot;  : &lt;int: total heap usage in bytes after the GC&gt;
+                  }
+  &quot;running&quot;     : true
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here is an example.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;gc&quot;,&quot;arguments&quot;:{&quot;type&quot;:&quot;all&quot;}}
+
+</code></pre>
+<h2 id="request-listbreakpoints">Request <code>listbreakpoints</code></h2>
+<p>The request <code>listbreakpoints</code> is used to get information on breakpoints that may have been set by the debugger.</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;listbreakpoints&quot;,
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;command&quot;     : &quot;listbreakpoints&quot;,
+  &quot;body&quot;        : { &quot;breakpoints&quot;: [ { &quot;type&quot;             : &lt;string: &quot;scriptId&quot;  or &quot;scriptName&quot;.&gt;,
+                                       &quot;script_id&quot;        : &lt;int: script id.  Only defined if type is scriptId.&gt;,
+                                       &quot;script_name&quot;      : &lt;string: script name.  Only defined if type is scriptName.&gt;,
+                                       &quot;number&quot;           : &lt;int: breakpoint number.  Starts from 1.&gt;,
+                                       &quot;line&quot;             : &lt;int: line number of this breakpoint.  Starts from 0.&gt;,
+                                       &quot;column&quot;           : &lt;int: column number of this breakpoint.  Starts from 0.&gt;,
+                                       &quot;groupId&quot;          : &lt;int: group id of this breakpoint.&gt;,
+                                       &quot;hit_count&quot;        : &lt;int: number of times this breakpoint has been hit.  Starts from 0.&gt;,
+                                       &quot;active&quot;           : &lt;bool: true if this breakpoint is enabled.&gt;,
+                                       &quot;ignoreCount&quot;      : &lt;int: remaining number of times to ignore breakpoint.  Starts from 0.&gt;,
+                                       &quot;actual_locations&quot; : &lt;actual locations of the breakpoint.&gt;,
+                                     }
+                                   ],
+                    &quot;breakOnExceptions&quot;         : &lt;true if break on all exceptions is enabled&gt;,
+                    &quot;breakOnUncaughtExceptions&quot; : &lt;true if break on uncaught exceptions is enabled&gt;
+                  }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<p>Here is an examples:</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;request&quot;,&quot;command&quot;:&quot;listbreakpoints&quot;}
+
+</code></pre>
+<h2 id="request-setvariablevalue">Request <code>setvariablevalue</code></h2>
+<p>This requests sets the value of a variable from the specified scope.</p>
+<p>Request:</p>
+<pre><code>{ &quot;seq&quot;       : &lt;number&gt;,
+  &quot;type&quot;      : &quot;request&quot;,
+  &quot;command&quot;   : &quot;setvariablevalue&quot;,
+  &quot;arguments  : { &quot;name&quot;  : &lt;string: variable name&gt;,
+                  &quot;scope&quot; : { &quot;number&quot; : &lt;scope number&gt;
+                              &quot;frameNumber&quot; : &lt;frame number, optional uses selected frame if missing&gt;
+                            }
+                }
+}
+
+</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;seq&quot;         : &lt;number&gt;,
+  &quot;type&quot;        : &quot;response&quot;,
+  &quot;request_seq&quot; : &lt;number&gt;,
+  &quot;type&quot;        : &quot;request&quot;,
+  &quot;body&quot;        : { &quot;newValue&quot;:   &lt;object: mirror object of the new value&gt; }
+  &quot;running&quot;     : &lt;is the VM running after sending this response&gt;
+  &quot;success&quot;     : true
+}
+
+</code></pre>
+<h1 id="events">Events</h1>
+<h2 id="event-break">Event <code>break</code></h2>
+<p>The event <code>break</code> indicate that the execution in the VM has stopped due to a break condition. This can be caused by an unconditional break request, by a break point previously set, a stepping action have completed or by executing the <code>debugger</code> statement in JavaScript.</p>
+<pre><code>{ &quot;seq&quot;   : &lt;number&gt;,
+  &quot;type&quot;  : &quot;event&quot;,
+
+  &quot;event&quot; : &quot;break&quot;,
+  &quot;body&quot;  : { &quot;invocationText&quot; : &lt;text representation of the stack frame&gt;,
+              &quot;sourceLine&quot;     : &lt;source line where execution is stopped&gt;,
+              &quot;sourceColumn&quot;   : &lt;column within the source line where execution is stopped&gt;,
+              &quot;sourceLineText&quot; : &lt;text for the source line where execution is stopped&gt;,
+              &quot;script&quot;         : { name         : &lt;resource name of the origin of the script&gt;
+                                   lineOffset   : &lt;line offset within the origin of the script&gt;
+                                   columnOffset : &lt;column offset within the origin of the script&gt;
+                                   lineCount    : &lt;number of lines in the script&gt;
+              &quot;breakpoints&quot;    : &lt;array of break point numbers hit if any&gt;
+            }
+}
+
+</code></pre>
+<p>Here are a couple of examples.</p>
+<pre><code>{&quot;seq&quot;:117,&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;break&quot;,&quot;body&quot;:{&quot;functionName&quot;:&quot;f&quot;,&quot;sourceLine&quot;:1,&quot;sourceColumn&quot;:14}}
+{&quot;seq&quot;:117,&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;break&quot;,&quot;body&quot;:{&quot;functionName&quot;:&quot;g&quot;,&quot;scriptData&quot;:&quot;test.js&quot;,&quot;sourceLine&quot;:12,&quot;sourceColumn&quot;:22,&quot;breakpoints&quot;:[1]}}
+{&quot;seq&quot;:117,&quot;type&quot;:&quot;event&quot;,&quot;event&quot;:&quot;break&quot;,&quot;body&quot;:{&quot;functionName&quot;:&quot;h&quot;,&quot;sourceLine&quot;:100,&quot;sourceColumn&quot;:12,&quot;breakpoints&quot;:[3,5,7]}}
+
+</code></pre>
+<h2 id="event-exception">Event <code>exception</code></h2>
+<p>The event <code>exception</code> indicate that the execution in the VM has stopped due to an exception.</p>
+<pre><code>{ &quot;seq&quot;   : &lt;number&gt;,
+  &quot;type&quot;  : &quot;event&quot;,
+  &quot;event&quot; : &quot;exception&quot;,
+  &quot;body&quot;  : { &quot;uncaught&quot; : &lt;boolean&gt;,
+              &quot;exception&quot; : ...
+              &quot;sourceLine&quot;     : &lt;source line where the exception was thrown&gt;,
+              &quot;sourceColumn&quot;   : &lt;column within the source line from where the exception was thrown&gt;,
+              &quot;sourceLineText&quot; : &lt;text for the source line from where the exception was thrown&gt;,
+              &quot;script&quot; : { &quot;name&quot; : &lt;name of script&gt;
+                           &quot;lineOffset&quot; : &lt;number&gt;
+                           &quot;columnOffset&quot; : &lt;number&gt;
+                           &quot;lineCount&quot; : &lt;number&gt;
+                         }
+
+            }
+}
+
+</code></pre>
+<h1 id="response-object-serialization">Response object serialization</h1>
+<p>Some responses contain objects as part of the body, e.g. the response to the evaluate request contains the result of the expression evaluated.</p>
+<p>All objects exposed through the debugger is assigned an ID called a handle. This handle is serialized and can be used to identify objects. A handle has a certain lifetime after which it will no longer refer to the same object. Currently the lifetime of handles match the processing of a debug event. For each debug event handles are recycled.</p>
+<p>An object can be serialized either as a reference to a given handle or as a value representation containing the object content.</p>
+<p>An object serialized as a reference looks follows this where <code>&lt;handle&gt;</code> is an integer.</p>
+<pre><code>{&quot;ref&quot;:&lt;handle&gt;}
+
+</code></pre>
+<p>For objects serialized as value they all contains the handle and the type of the object.</p>
+<pre><code>{ &quot;handle&quot; : &lt;handle&gt;,
+  &quot;type&quot;   : &lt;&quot;undefined&quot;, &quot;null&quot;, &quot;boolean&quot;, &quot;number&quot;, &quot;string&quot;, &quot;object&quot;, &quot;function&quot; or &quot;frame&quot;&gt;
+}
+
+</code></pre>
+<p>In some situations special transient objects are created by the debugger. These objects are not really visible in from JavaScript, but are created to materialize something inside the VM as an object visible to the debugger. One example of this is the local scope object returned from the <code>scope</code> and <code>scopes</code> request. Transient objects are identified by having a negative handle. A transient object can never be retrieved using the <code>lookup</code> request, so all transient objects referenced will be in the <code>refs</code> part of the response. The lifetime of transient objects is basically the request they are involved in.</p>
+<p>For the primitive JavaScript types <code>undefined</code> and <code>null</code> the type describes the value fully.</p>
+<pre><code>{&quot;handle&quot;:&lt;handle&gt;,&quot;type&quot;:&quot;undefined&quot;}
+
+</code></pre>
+<pre><code>{&quot;handle&quot;:&lt;handle&gt;,&quot;type&quot;:&quot;null&quot;}
+
+</code></pre>
+<p>For the rest of the primitive types <code>boolean</code>, <code>number</code> and <code>string</code> the value is part of the result.</p>
+<pre><code>{ &quot;handle&quot;:&lt;handle&gt;,
+  &quot;type&quot;  : &lt;&quot;boolean&quot;, &quot;number&quot; or &quot;string&quot;&gt;
+  &quot;value&quot; : &lt;JSON encoded value&gt;
+}
+
+</code></pre>
+<p>Boolean value.</p>
+<pre><code>{&quot;handle&quot;:7,&quot;type&quot;:&quot;boolean&quot;,&quot;value&quot;:true}
+
+</code></pre>
+<p>Number value.</p>
+<pre><code>{&quot;handle&quot;:8,&quot;type&quot;:&quot;number&quot;,&quot;value&quot;:42}
+
+</code></pre>
+<p>String value.</p>
+<pre><code>{&quot;handle&quot;:9,&quot;type&quot;:&quot;string&quot;,&quot;value&quot;:&quot;a string&quot;}
+
+</code></pre>
+<p>An object is encoded with additional information.</p>
+<pre><code>{ &quot;handle&quot;              : &lt;handle&gt;,
+  &quot;type&quot;                : &quot;object&quot;,
+  &quot;className&quot;           : &lt;Class name, ECMA-262 property [[Class]]&gt;,
+  &quot;constructorFunction&quot; : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;protoObject&quot;         : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;prototypeObject&quot;     : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;properties&quot; : [ {&quot;name&quot; : &lt;name&gt;,
+                    &quot;ref&quot;  : &lt;handle&gt;
+                   },
+                   ...
+                 ]
+}
+
+</code></pre>
+<p>The difference between the <code>protoObject</code> and the <code>prototypeObject</code> is that the <code>protoObject</code> contains a reference to the actual prototype object (for which accessibility is not defined in ECMA-262, but in V8 it is accessible using the <code>__proto__</code> property) whereas the <code>prototypeObject</code> is the value of the <code>prototype</code> property.</p>
+<p>Here is an example.</p>
+<pre><code>{&quot;handle&quot;:3,&quot;type&quot;:&quot;object&quot;,&quot;className&quot;:&quot;Object&quot;,&quot;constructorFunction&quot;:{&quot;ref&quot;:4},&quot;protoObject&quot;:{&quot;ref&quot;:5},&quot;prototypeObject&quot;:{&quot;ref&quot;:6},&quot;properties&quot;:[{&quot;name&quot;:&quot;a&quot;,&quot;ref:7},{&quot;name&quot;:&quot;b&quot;,&quot;ref&quot;:8}]}
+
+</code></pre>
+<p>An function is encoded as an object but with additional information in the properties <code>name</code>, <code>inferredName</code>, <code>source</code> and <code>script</code>.</p>
+<pre><code>{ &quot;handle&quot; : &lt;handle&gt;,
+  &quot;type&quot;                : &quot;function&quot;,
+  &quot;className&quot;           : &quot;Function&quot;,
+  &quot;constructorFunction&quot; : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;protoObject&quot;         : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;prototypeObject&quot;     : {&quot;ref&quot;:&lt;handle&gt;},
+  &quot;name&quot;                : &lt;function name&gt;,
+  &quot;inferredName&quot;        : &lt;inferred function name for anonymous functions&gt;
+  &quot;source&quot;              : &lt;function source&gt;,
+  &quot;script&quot;              : &lt;reference to function script&gt;,
+  &quot;scriptId&quot;            : &lt;id of function script&gt;,
+  &quot;position&quot;            : &lt;function begin position in script&gt;,
+  &quot;line&quot;                : &lt;function begin source line in script&gt;,
+  &quot;column&quot;              : &lt;function begin source column in script&gt;,
+  &quot;properties&quot; : [ {&quot;name&quot; : &lt;name&gt;,
+                    &quot;ref&quot;  : &lt;handle&gt;
+                   },
+                   ...
+                 ]
+}
+
+</code></pre>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/arraylist-qian-xi">
+              <h3 class="post-title">
+                ArrayList浅析
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

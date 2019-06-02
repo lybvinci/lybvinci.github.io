@@ -1,0 +1,435 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ArrayList浅析 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              ArrayList浅析
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="0x00-前言">0x00 前言</h2>
+<p>大家好，我是 ArrayList， 应该是大家都耳熟能详的容器之一了。学习一下内中原理，还是很有必要的。至于为什么叫浅析呢，因为本文不会分析 Arrays 的相关方法。为什么不分析 Arrays 的相关方法，就是浅析了呢？那就接着往下看~（本文分析源码基于<code>jdk1.8</code>。本文基于第一人称描述，我 == ArrayList。）</p>
+<!-- more --> 
+<h2 id="0x01-一句话介绍">0x01 一句话介绍</h2>
+<p>我实际上就是一个可以自动扩容的数组，并可以进行增删改查等操作。</p>
+<h2 id="0x02-概述">0x02 概述</h2>
+<p>我是<code>list</code>接口的一个可扩容实现。通过 Java 的泛型机制，我可以容纳任何类型的对象。我和 <code>Vector</code> 非常像，但我是线程不安全的，而他是线程安全的，其他地方的差异很小。</p>
+<p>我所有方法中，时间复杂度为O(1)的有：</p>
+<ul>
+<li>size</li>
+<li>get</li>
+<li>isEmpty</li>
+<li>set</li>
+<li>iterator</li>
+<li>listIterator
+而<code>add</code>方法是O(n)的。</li>
+</ul>
+<p>我的每个实例，都有一个<code>capacity</code>变量。那么这个变量是干嘛的呢？这个变量用于衡量我内在的数组用来装变量的长度，他总是大于等于 size 。当添加一个元素到我这里，他会自动的增长，以满足需要。</p>
+<p>如果一个应用他需要往我这里放置很多的元素，那最好一开始就设置我的 ensureCapacity 变量，这样我一开始就申请很多的空间，而不用我一次次扩容浪费时间了。</p>
+<p><code>请注意，我不是线程安全的！</code>如果多个线程同时修改我，一个要设置同步，否则会出现数据错误的情况，这个锅，我是不背的。简单的方式就是用<code>Collections#synchronizedList</code>来包装一下我，我就变成一个同步的容器了。</p>
+<p>我同样拥有<code>fail-fast</code>机制，如果你迭代我，同时又修改我，我就会抛出<code>ConcurrentModificationException</code>异常，让你承受。多线程同时修改迭代，也会出现这个问题。</p>
+<h2 id="0x03-解释几个变量">0x03 解释几个变量</h2>
+<h4 id="private-static-final-int-default_capacity-10">private static final int DEFAULT_CAPACITY = 10</h4>
+<p>默认的数组大小。</p>
+<h4 id="private-static-final-object-defaultcapacity_empty_elementdata">private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {}</h4>
+<p>如果构造我时，采用的是默认的 capacity ，就使用 DEFAULTCAPACITY_EMPTY_ELEMENTDATA 来当做默认的空数组。</p>
+<h4 id="private-static-final-object-empty_elementdata">private static final Object[] EMPTY_ELEMENTDATA = {}</h4>
+<p>capacity == 0 ，则使用 EMPTY_ELEMENTDATA 来当做默认的空数组。此时，产生了一个疑问，为什么要弄两个这样的变量呢？后面我们在扩容的时候可以看到，他们是用来区分到底是被设置了 capacity 是 0 ，还是使用了默认的 capacity。那区分这个干嘛呢？那就往下看看扩容是怎么扩的。</p>
+<h4 id="transient-object-elementdata">transient Object[] elementData</h4>
+<p>先解释一下 <code>transient</code> 这个，这个主要是让此变量不进行序列化。更多的可以谷歌一下，看看详解，此处就略过了。这个就是我的核心部件，我所有的元素都放在他里面！实质就是一个 Object 数组！</p>
+<h4 id="private-int-size">private int size</h4>
+<p>想要知道我里面到底有多少个元素？喏，size 就是我所拥有的元素数量。</p>
+<h2 id="0x04-方法分析">0x04 方法分析</h2>
+<h3 id="构造函数分析">构造函数分析</h3>
+<pre><code>// 拥有设置 capacity 参数的构造函数
+public ArrayList(int initialCapacity) {
+    if (initialCapacity &gt; 0) {  // 如果设置的 initialCapacity 初始值大于0，那我的数组就初始相应的长度
+        this.elementData = new Object[initialCapacity];
+    } else if (initialCapacity == 0) { 
+        // 如果设置了 0 ，那就用 EMPTY_ELEMENTDATA 来初始化我的数组。
+        this.elementData = EMPTY_ELEMENTDATA;
+    } else { // 小于 0 ，抛出异常
+        throw new IllegalArgumentException(&quot;Illegal Capacity: &quot;+
+                                           initialCapacity);
+    }
+}
+
+// 无参构造
+public ArrayList() {
+    // 直接用 DEFAULTCAPACITY_EMPTY_ELEMENTDATA 来初始化我的数组。
+    this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+}
+// 还有其他构造函数，此处略去不讲。
+</code></pre>
+<h3 id="size">size()</h3>
+<p>此方法用于查看我有多少个元素，来看看实现。</p>
+<pre><code>public int size() {
+    // 非常简单，就是返回 size 变量。
+    return size;
+}
+</code></pre>
+<h3 id="getint-index">get(int index)</h3>
+<p>get 方法用来返回指定索引处的元素。</p>
+<pre><code>public E get(int index) {
+    // 检查索引是否越界
+    rangeCheck(index);
+    // 直接根据索引返回元素
+    return elementData(index);
+}
+
+private void rangeCheck(int index) {
+    // 可以看到，如果索引大于等于 size，将会抛出异常。所以在使用时一定要注意不能传入错误的索引，导致程序异常。
+    if (index &gt;= size)
+        throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+}
+</code></pre>
+<h3 id="setint-index-e-element">set(int index, E element)</h3>
+<p>这个方法相当于修改操作。</p>
+<pre><code>public E set(int index, E element) {
+    // 检查边界
+    rangeCheck(index);
+    // 先拿到老的元素
+    E oldValue = elementData(index);
+    // 对应位置附上新元素
+    elementData[index] = element;
+    // 返回老元素。所以 set 方法的返回是对应的旧元素。
+    return oldValue;
+}
+</code></pre>
+<h3 id="adde-e">add(E e)</h3>
+<p>这个方法相当于增加操作。</p>
+<pre><code>public boolean add(E e) {
+    // 确保数组空间充足
+    ensureCapacityInternal(size + 1);  // Increments modCount!!
+    // 将元素放到原数组长度后面一位。
+    elementData[size++] = e;
+    return true;
+}
+private void ensureCapacityInternal(int minCapacity) {
+    // 这里使用了 DEFAULTCAPACITY_EMPTY_ELEMENTDATA 。
+    // 这个变量是在我初始化时，使用了默认的 capacity 的时候，用来初始化数组的。
+    if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+        // 在这种情况下， 将入参和 默认 capacity 进行比较，取其较大大者。
+        minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+    }
+    // 根据上面的操作，决定了使用什么长度来扩容。下面来进行扩容。
+    ensureExplicitCapacity(minCapacity);
+}
+
+private void ensureExplicitCapacity(int minCapacity) {
+    // 如果会执行这个操作，就代表会改变数组，则将改变标志位+1.
+    modCount++;
+
+    // 原文注释这里说可能会有内存溢出
+    if (minCapacity - elementData.length &gt; 0) // 如果大于数组长度，则进行扩容。
+        grow(minCapacity);
+}
+
+// 我内部的数组最大可以这么大，为什么减了个8呢？因为有些VM底层实现，保留了一些内部字段，致使留给用户的长度就变小了。
+private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+private void grow(int minCapacity) {
+    // 要注意是否会溢出。
+    // 先保存数组的原长度。
+    int oldCapacity = elementData.length;
+    // 新长度是原长度的1.5倍。（右移相当于除以2，所以加起来是1.5倍）
+    int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
+    if (newCapacity - minCapacity &lt; 0) // 如果新长度小于入参长度，则新长度赋值为入参长度。
+        newCapacity = minCapacity;
+    if (newCapacity - MAX_ARRAY_SIZE &gt; 0) // 如果新长度大于数组最大长度，则调用 hugeCapacity 方法获取长度。
+        newCapacity = hugeCapacity(minCapacity);
+    // 调用了 Arrays 的方法，对数组进行了一个复制。
+    // 底层就不解释了，可以简单理解为把原 elementData 数组中的值，一个个都搬移到了新的长度为 newCapacity 的数组中，然后让 elementData 指向新数组。
+    //（由于没有解析 Arrays.copy 方法，所以本文只能算浅析，后面相关操作，也不会进行解析。要解析的话，一篇文章可能就放不下了。以后专开文章介绍这些工具类。）
+    elementData = Arrays.copyOf(elementData, newCapacity);
+}
+
+private static int hugeCapacity(int minCapacity) {
+    if (minCapacity &lt; 0) // 如果 传递进来的参数小于0，则直接抛异常，此时数组已经放不下了。
+        // 什么时候会小于0呢？可以看到参数是通过 index + 1 传递进来的，当index 已经到达了 Integer.MAX_VALUE，则会出现此情况。
+        throw new OutOfMemoryError();
+    // 发现参数比设置的最大长度还要大，那行吧，那就返回最大值，不然就直接返回最大的数组长度。
+    return (minCapacity &gt; MAX_ARRAY_SIZE) ?
+        Integer.MAX_VALUE :
+        MAX_ARRAY_SIZE;
+}
+</code></pre>
+<h3 id="addint-index-e-element">add(int index, E element)</h3>
+<p>这个方法实际上是一个插入操作。</p>
+<pre><code>public void add(int index, E element) {
+    // 范围检查
+    rangeCheckForAdd(index);
+
+    // 容量检查
+    ensureCapacityInternal(size + 1);  // modCount增加了
+    // 直接调用了 System.arraycopy 方法。
+    // 这里也不去分析他底层的源码，去分析也不太容易，他实际上是一个 native 方法，要看只能去看 jni 层的代码了。
+    // 解释一下现在参数所表示的意思：就是将数组根据传入的 index 分成两部分，然后把后面一部分往后面整体移动一个位置，index位置留出空位。
+    // 第一个参数表示源数组
+    // 第二个参数表示从哪个位置开始复制
+    // 第三个参数表示复制到哪个数组中
+    // 第四个参数表示复制从哪里开始
+    // 第五个参数表示复制多少位
+    System.arraycopy(elementData, index, elementData, index + 1,
+                     size - index);
+    // 将 index 位置进行填充
+    elementData[index] = element;
+    // 长度自增
+    size++;
+}
+举个🌰解释一下 System.arraycopy 的操作。
+有一个数组如下：
+[0,1,2,3,4,5,6,null,null,null]
+现在如果要在第二位插入一个数字7.
+第一步：找到第2个位置，是2；
+第二步：把第二位开始的字段整体往后迁移一位，变成：[0,1,2,2,3,4,5,6,null,null]
+此时数组已经移动完毕，再进行赋值即可。
+</code></pre>
+<p>通过源码的分析，可以看到插入实际上是先对数组进行复制移动，耗费巨大。所以应当避免此操作。</p>
+<h3 id="removeint-index">remove(int index)</h3>
+<p>此即删除操作。</p>
+<pre><code>public E remove(int index) {
+    // 边界检查
+    rangeCheck(index);
+    // 修改计数
+    modCount++;
+    // 找到旧值
+    E oldValue = elementData(index);
+    // 计算需要移动多少个元素。
+    int numMoved = size - index - 1;
+    if (numMoved &gt; 0)
+        // 和 上面的 add 操作调用，如出一辙。
+        System.arraycopy(elementData, index+1, elementData, index,
+                         numMoved);
+    elementData[--size] = null; // 利于内存回收
+    // 返回旧值
+    return oldValue;
+}
+</code></pre>
+<p>可以发现，删除操作也比较费劲，除非是最后一个元素。</p>
+<h3 id="removeobject-o">remove(Object o)</h3>
+<p>删除指定元素，可以想象，肯定是一个个的遍历然后对比，再执行删除操作。</p>
+<pre><code>public boolean remove(Object o) {
+    // null 和 非 null 分开处理，私以为，直接使用 Objects.equals 方法不就好了么。
+    if (o == null) {
+        for (int index = 0; index &lt; size; index++)
+            if (elementData[index] == null) {
+                fastRemove(index);
+                return true;
+            }
+    } else {
+        for (int index = 0; index &lt; size; index++)
+            // 可以看到他调用的是 equals 方法，然而没有调用 == 来判断是否是同一个对象。
+            // 所以此处要注意，如果重写了 equals 方法，则同一个对象未必相等。这里可能就识别不到。
+            if (o.equals(elementData[index])) {
+                fastRemove(index);
+                return true;
+            }
+    }
+    return false;
+}
+// 这个方法和 remove 的上一个方法里面的内容一模一样，不知道上个 remove 方法不用。
+private void fastRemove(int index) {
+    modCount++;
+    int numMoved = size - index - 1;
+    if (numMoved &gt; 0)
+        System.arraycopy(elementData, index+1, elementData, index,
+                         numMoved);
+    elementData[--size] = null; // clear to let GC do its work
+}
+</code></pre>
+<h3 id="clear">clear()</h3>
+<p>清空此 list。</p>
+<pre><code>public void clear() {
+    modCount++;
+
+    // 挨个赋值 null
+    for (int i = 0; i &lt; size; i++)
+        elementData[i] = null;
+
+    size = 0;
+}
+</code></pre>
+<h3 id="containsobject-o-indexofobject-o">contains(Object o) &amp;&amp; indexOf(Object o)</h3>
+<p>为什么这两个方法放在一起呢，因为他们之间是好基友的关系。</p>
+<pre><code>public boolean contains(Object o) {
+    // 可以看到，直接调用的 indexOf 方法。
+    return indexOf(o) &gt;= 0;
+}
+
+public int indexOf(Object o) {
+    // 还是将 null 和 非 null 进行了区分处理。是不是似曾相识的代码！remove 不也这么做的么！
+    if (o == null) {
+        for (int i = 0; i &lt; size; i++)
+            if (elementData[i]==null)
+                return i;
+    } else {
+        for (int i = 0; i &lt; size; i++)
+            if (o.equals(elementData[i]))
+                return i;
+    }
+    return -1;
+}
+</code></pre>
+<p>所以可以看到， contains 和 indexOf 实际上都是对数组进行一个遍历操作，所以使用一定要谨慎。而 Set 方法的 contains 方法是直接用的 hash 计算的，复杂度是 O(1).所以尽量用 Set 进行类似操作。</p>
+<h3 id="sublistint-fromindex-int-toindex">subList(int fromIndex, int toIndex)</h3>
+<p>从字面上看，他就是返回一个我的孩子 list。</p>
+<pre><code>public List&lt;E&gt; subList(int fromIndex, int toIndex) {
+    // 边界检查
+    subListRangeCheck(fromIndex, toIndex, size);
+    // 返回一个 SubList 类！竟然不是 ArrayList
+    return new SubList(this, 0, fromIndex, toIndex);
+}
+
+看看内部类 SubList 的声明：
+private class SubList extends AbstractList&lt;E&gt; implements RandomAccess
+和 ArrayList 竟然不一样。
+那就看看构造函数吧：
+
+SubList(AbstractList&lt;E&gt; parent,
+        int offset, int fromIndex, int toIndex) {
+    // parent 当然就是我咯，ArrayList
+    this.parent = parent;
+    // 相对我的偏移量，就是孩子是从哪开始截取的
+    this.parentOffset = fromIndex;
+    // 如果儿子也要生儿子，就是产生SubList，则要计算相对爷爷的偏移量，此值就是为了来计算这个。
+    // 如果要生重孙子，那就要计算相对于祖爷爷的偏移量。子子孙孙无穷尽也。
+    this.offset = offset + fromIndex;
+    // 计算孩子有多长。
+    this.size = toIndex - fromIndex;
+    // 继承父亲的更改计数。
+    this.modCount = ArrayList.this.modCount;
+}
+看一下 SubList 方法的 get 方法。
+public E get(int index) {
+    // 检查边界
+    rangeCheck(index);
+    // 检查是否已经被修改
+    checkForComodification();
+    // 吃惊吗？竟然直接修改的是父亲的数组。
+    return ArrayList.this.elementData(offset + index);
+}
+private void checkForComodification() {
+    // 和父亲的修改计数进行一个对比，如果父亲变了，则抛出异常。
+    if (ArrayList.this.modCount != this.modCount)
+        throw new ConcurrentModificationException();
+}
+......
+</code></pre>
+<p>可以看到，SubList 实际上并不是拿到了一个和原数组完全分离的数组，对于 SubList 的修改，全都会作用于父亲这里。这就好比儿子惹得祸，父亲都要来背。所以使用此方法一定要注意。同理，生儿子也要慎重！哈哈。</p>
+<h3 id="其他方法就先略过了">其他方法就先略过了</h3>
+<h2 id="0x05-喝口水来个总结">0x05 喝口水，来个总结</h2>
+<p>ArrayList 相对来说简单些，但是其中也不乏 contains subList 这种需要注意的方法。知己知彼，方能百战不殆！</p>
+<p>文中如有错误，请大家不吝赐教！感激不尽，与君共勉。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/chang-yong-de-hashmap-dao-di-shi-ge-shi-me-jie-gou">
+              <h3 class="post-title">
+                常用的HashMap到底是个什么结构
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

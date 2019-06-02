@@ -1,45 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lybvinci.github.io</id>
-    <title>Gridea</title>
-    <updated>2019-06-02T10:54:02.125Z</updated>
+    <title>Lybvinci&apos;s blob</title>
+    <updated>2019-06-02T11:18:29.286Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lybvinci.github.io"/>
     <link rel="self" href="https://lybvinci.github.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
+    <subtitle>化繁为简</subtitle>
     <logo>https://lybvinci.github.io/images/avatar.png</logo>
     <icon>https://lybvinci.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2019, Gridea</rights>
+    <rights>All rights reserved 2019, Lybvinci&apos;s blob</rights>
     <entry>
-        <title type="html"><![CDATA[Hello Gridea]]></title>
-        <id>https://lybvinci.github.io/post/hello-gridea</id>
-        <link href="https://lybvinci.github.io/post/hello-gridea">
+        <title type="html"><![CDATA[3.17.12版本v8调试协议]]></title>
+        <id>https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi</id>
+        <link href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
         </link>
-        <updated>2018-12-11T16:00:00.000Z</updated>
-        <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
+        <updated>2019-06-02T11:10:57.000Z</updated>
+        <summary type="html"><![CDATA[<p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
 ]]></summary>
-        <content type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
-<!-- more -->
-<p><a href="https://github.com/getgridea/gridea">Github</a><br>
-<a href="http://hvenotes.fehey.com/">Gridea 主页</a><br>
-<a href="http://fehey.com/">示例网站</a></p>
-<h2 id="特性">特性👇</h2>
-<p>📝  你可以使用最酷的 <strong>Markdown</strong> 语法，进行快速创作</p>
-<p>🌉  你可以给文章配上精美的封面图和在文章任意位置插入图片</p>
-<p>🏷️  你可以对文章进行标签分组</p>
-<p>📋  你可以自定义菜单，甚至可以创建外部链接菜单</p>
-<p>💻  你可以在 <strong>𝖶𝗂𝗇𝖽𝗈𝗐𝗌</strong> 或 <strong>𝖬𝖺𝖼𝖮𝖲</strong> 设备上使用此客户端</p>
-<p>🌎  你可以使用 <strong>𝖦𝗂𝗍𝗁𝗎𝖻 𝖯𝖺𝗀𝖾𝗌</strong> 或 <strong>Coding Pages</strong> 向世界展示，未来将支持更多平台</p>
-<p>💬  你可以进行简单的配置，接入 <a href="https://github.com/gitalk/gitalk">Gitalk</a> 或 <a href="https://github.com/SukkaW/DisqusJS">DisqusJS</a> 评论系统</p>
-<p>🇬🇧  你可以使用<strong>中文简体</strong>或<strong>英语</strong></p>
-<p>🌁  你可以任意使用应用内默认主题或任意第三方主题，强大的主题自定义能力</p>
-<p>🖥  你可以自定义源文件夹，利用 OneDrive、百度网盘、iCloud、Dropbox 等进行多设备同步</p>
-<p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前🏃</p>
-<p>未来，它一定会成为你离不开的伙伴</p>
-<p>尽情发挥你的才华吧！</p>
-<p>😘 Enjoy~</p>
+        <content type="html"><![CDATA[<p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[ArrayList浅析]]></title>
+        <id>https://lybvinci.github.io/post/arraylist-qian-xi</id>
+        <link href="https://lybvinci.github.io/post/arraylist-qian-xi">
+        </link>
+        <updated>2019-06-02T11:10:28.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>大家好，我是 ArrayList， 应该是大家都耳熟能详的容器之一了。学习一下内中原理，还是很有必要的。至于为什么叫浅析呢，因为本文不会分析 Arrays 的相关方法。为什么不分析 Arrays 的相关方法，就是浅析了呢？那就接着往下看~（本文分析源码基于<code>jdk1.8</code>。本文基于第一人称描述，我 == ArrayList。）</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>大家好，我是 ArrayList， 应该是大家都耳熟能详的容器之一了。学习一下内中原理，还是很有必要的。至于为什么叫浅析呢，因为本文不会分析 Arrays 的相关方法。为什么不分析 Arrays 的相关方法，就是浅析了呢？那就接着往下看~（本文分析源码基于<code>jdk1.8</code>。本文基于第一人称描述，我 == ArrayList。）</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[常用的HashMap到底是个什么结构]]></title>
+        <id>https://lybvinci.github.io/post/chang-yong-de-hashmap-dao-di-shi-ge-shi-me-jie-gou</id>
+        <link href="https://lybvinci.github.io/post/chang-yong-de-hashmap-dao-di-shi-ge-shi-me-jie-gou">
+        </link>
+        <updated>2019-06-02T11:09:38.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>HashMap 是最常用的容器之一，应该没什么疑问了。可你到底了解他吗？网上已经有很多文章来总结 HashMap 了，我来写这篇，主要是为了记录自己阅读之后的一点点小感悟，如若有错误的地方，请大家指正。下文分析基于 <code>jdk1.8</code> 。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>HashMap 是最常用的容器之一，应该没什么疑问了。可你到底了解他吗？网上已经有很多文章来总结 HashMap 了，我来写这篇，主要是为了记录自己阅读之后的一点点小感悟，如若有错误的地方，请大家指正。下文分析基于 <code>jdk1.8</code> 。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[日志SLF4J解惑]]></title>
+        <id>https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo</id>
+        <link href="https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo">
+        </link>
+        <updated>2019-06-02T11:09:12.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>作为后端开发，日志可能是我们最常用的功能之一了。平时大家也可能经常遇见日志冲突，常见的overflow报错，今天为大家详解一下，这其中的原理以及问题所在。本文涉及 jar 包有：log4j,log4j-over-slf4j,slf4j-api,slf4j-log4j12 等等。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="0x00-前言">0x00 前言</h2>
+<p>作为后端开发，日志可能是我们最常用的功能之一了。平时大家也可能经常遇见日志冲突，常见的overflow报错，今天为大家详解一下，这其中的原理以及问题所在。本文涉及 jar 包有：log4j,log4j-over-slf4j,slf4j-api,slf4j-log4j12 等等。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[intellij创建springboot项目]]></title>
+        <id>https://lybvinci.github.io/post/intellij-chuang-jian-springboot-xiang-mu</id>
+        <link href="https://lybvinci.github.io/post/intellij-chuang-jian-springboot-xiang-mu">
+        </link>
+        <updated>2019-06-02T11:08:08.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="如何利用intelij创建springboot项目">如何利用intelij创建springboot项目</h2>
+<p>选择file - new - project</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="如何利用intelij创建springboot项目">如何利用intelij创建springboot项目</h2>
+<p>选择file - new - project</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[nodejs 启动流程分析（1）]]></title>
+        <id>https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-1</id>
+        <link href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-1">
+        </link>
+        <updated>2019-06-02T11:07:43.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="前言">前言</h2>
+<p>之前用过一段时间的<code>v8</code> ，也只是会初始化那个流程，最近想深入了解一下，所以想要通过学习 <code>nodejs</code> 来加深理解。这篇文章主要是讲讲 <code>nodejs</code> 的初始化流程，如有错误，烦请指教~。（本文分析基于 v10.9.0，本文会尽量避免大段源码，但是为了有理有据，还是会放上一些精简过并带有注释的代码上来）。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="前言">前言</h2>
+<p>之前用过一段时间的<code>v8</code> ，也只是会初始化那个流程，最近想深入了解一下，所以想要通过学习 <code>nodejs</code> 来加深理解。这篇文章主要是讲讲 <code>nodejs</code> 的初始化流程，如有错误，烦请指教~。（本文分析基于 v10.9.0，本文会尽量避免大段源码，但是为了有理有据，还是会放上一些精简过并带有注释的代码上来）。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[nodejs 启动流程分析（2）]]></title>
+        <id>https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-2</id>
+        <link href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-2">
+        </link>
+        <updated>2019-06-02T11:07:19.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="前言">前言</h2>
+<p>上篇 <a href="https://www.jianshu.com/p/c02fec0defcf">nodejs 启动流程分析</a>中，遗留了几个问题。这一篇，主要讲讲模块加载流程。大家都应该熟悉 timer 模块的相关功能。我们就以 timer 为引子，一步步看下去吧。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="前言">前言</h2>
+<p>上篇 <a href="https://www.jianshu.com/p/c02fec0defcf">nodejs 启动流程分析</a>中，遗留了几个问题。这一篇，主要讲讲模块加载流程。大家都应该熟悉 timer 模块的相关功能。我们就以 timer 为引子，一步步看下去吧。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Web容器项目总结]]></title>
+        <id>https://lybvinci.github.io/post/web-rong-qi-xiang-mu-zong-jie</id>
+        <link href="https://lybvinci.github.io/post/web-rong-qi-xiang-mu-zong-jie">
+        </link>
+        <updated>2019-06-02T11:06:54.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="背景">背景</h2>
+<p>蘑菇街是一个专门为女性购物打造的时尚购物平台，App端承接了大量的流量，及时发布新内容成为一个挑战。在保证平台稳定性和迅速更新的前提下，我们选择了native和h5的混合开发，并对其不断的进行了优化迭代。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="背景">背景</h2>
+<p>蘑菇街是一个专门为女性购物打造的时尚购物平台，App端承接了大量的流量，及时发布新内容成为一个挑战。在保证平台稳定性和迅速更新的前提下，我们选择了native和h5的混合开发，并对其不断的进行了优化迭代。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[XCore开发体验]]></title>
+        <id>https://lybvinci.github.io/post/xcore-kai-fa-ti-yan</id>
+        <link href="https://lybvinci.github.io/post/xcore-kai-fa-ti-yan">
+        </link>
+        <updated>2019-06-02T11:06:29.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="背景">背景</h2>
+<p>XCore 是一个动态跨平台框架。类似 RN，Weex。一次编写，多端运行是我们的目标。</p>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="背景">背景</h2>
+<p>XCore 是一个动态跨平台框架。类似 RN，Weex。一次编写，多端运行是我们的目标。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[国内安卓浏览器调研]]></title>
+        <id>https://lybvinci.github.io/post/guo-nei-an-zhuo-liu-lan-qi-diao-yan</id>
+        <link href="https://lybvinci.github.io/post/guo-nei-an-zhuo-liu-lan-qi-diao-yan">
+        </link>
+        <updated>2019-06-02T11:06:03.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="0x00-现状">0x00 现状</h2>
+<p>先取几个排名吧：）（全部搜索关键字浏览器）</p>
+<p>来自应用宝默认排名：</p>
+<ol>
+<li>QQ浏览器 （24亿下载）</li>
+<li>百度 （22.4亿下载）</li>
+<li>UC浏览器 （12亿次下载）</li>
+<li>搜狗浏览器 （1.3亿次下载）</li>
+<li>猎豹 （1.1亿）</li>
+<li>傲游5 （603万次）</li>
+<li>百度极速版 （4537.4次）</li>
+<li>谷歌浏览器 （5488万次）</li>
+<li>e浏览器 （226万次）</li>
+<li>百度浏览器 （1.7亿次）</li>
+</ol>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="0x00-现状">0x00 现状</h2>
+<p>先取几个排名吧：）（全部搜索关键字浏览器）</p>
+<p>来自应用宝默认排名：</p>
+<ol>
+<li>QQ浏览器 （24亿下载）</li>
+<li>百度 （22.4亿下载）</li>
+<li>UC浏览器 （12亿次下载）</li>
+<li>搜狗浏览器 （1.3亿次下载）</li>
+<li>猎豹 （1.1亿）</li>
+<li>傲游5 （603万次）</li>
+<li>百度极速版 （4537.4次）</li>
+<li>谷歌浏览器 （5488万次）</li>
+<li>e浏览器 （226万次）</li>
+<li>百度浏览器 （1.7亿次）</li>
+</ol>
 ]]></content>
     </entry>
 </feed>

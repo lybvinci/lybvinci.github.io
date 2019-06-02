@@ -1,0 +1,344 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>nodejs 启动流程分析（1） | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              nodejs 启动流程分析（1）
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="前言">前言</h2>
+<p>之前用过一段时间的<code>v8</code> ，也只是会初始化那个流程，最近想深入了解一下，所以想要通过学习 <code>nodejs</code> 来加深理解。这篇文章主要是讲讲 <code>nodejs</code> 的初始化流程，如有错误，烦请指教~。（本文分析基于 v10.9.0，本文会尽量避免大段源码，但是为了有理有据，还是会放上一些精简过并带有注释的代码上来）。</p>
+<!-- more -->
+<p>Helloworld 镇楼：</p>
+<pre><code class="language-js">const http = require('http');
+const hostname = '127.0.0.1';
+const port = 8888;
+
+http.createServer((req, res) =&gt; {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Hello World\n');
+}).listen(port, hostname, () =&gt; {
+  console.log(`Server running at http://${hostname}:${port}/`);
+});
+</code></pre>
+<p>写过 nodejs 的都能看懂如上代码。寥寥数行，就创建了一个 http 服务。第一行代码，就出现了一个 require 关键字，那么 require 是从何而来呢？带着这个问题，我们一起去看下吧。</p>
+<h2 id="启动流程">启动流程</h2>
+<p><strong>1.</strong> node 的目录结构，此处就不再分析了。最重要的就是 src 和 lib 了。 src 路径下是 node 的 C++ 实现的主要源码目录，而 lib 主要是 JavaScript 实现所在目录。稍微有一些 C++ 编程基础的同学应该知道，C++ 的启动函数就是 main 函数。那么 node 的启动函数在哪呢。通过全文搜索，可以确定，启动函数就在 <a href="https://github.com/nodejs/node/blob/master/src/node_main.cc">src/node_main.cc</a> 这个文件当中了。此处截取部分源码：</p>
+<pre><code class="language-c++">// windows 启动方法。
+int wmain(int argc, wchar_t* wargv[]) {
+  //...
+  // 启动方法。
+  return node::Start(argc, argv);
+}
+//...
+// 类linux 启动方法。
+int main(int argc, char* argv[]) {
+    // ...
+    // 启动方法。
+    return node::Start(argc, argv);
+}
+</code></pre>
+<p>可以看到，这个只是一个外壳，做了一些逻辑判断，最终的核心就是调用 Start 方法。</p>
+<p><strong>2.</strong> Start 方法位于 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a>:</p>
+<pre><code class="language-C++">int Start(int argc, char** argv) {
+    //...
+    Init(&amp;argc, const_cast&lt;const char**&gt;(argv), &amp;exec_argc, &amp;exec_argv); // 1.
+    // v8 初始化。
+    InitializeV8Platform(per_process_opts-&gt;v8_thread_pool_size);
+    v8_initialized = true;
+    // 开始事件循环。
+    const int exit_code =
+        Start(uv_default_loop(), args, exec_args);  // 2.
+    //... v8 开始销毁。
+    v8_initialized = false;
+    V8::Dispose();
+	//...
+    return exit_code;
+}
+</code></pre>
+<p>可以看到，Start 方法主要是执行了一个 Init 方法以及对 v8 进行了初始化的操作，然后开启了整个事件循环流程。</p>
+<p><strong>2.1</strong> 来看看 Init 方法做了些什么事情，同样位于 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-C++">void Init(int* argc,
+          const char** argv,
+          int* exec_argc,
+          const char*** exec_argv) {
+  //... 注册内部模块。 此处暂时不细讲。
+  RegisterBuiltinModules();
+  //...  处理参数，打印 help 等。
+  ProcessArgv(argv, exec_argv, false);
+  //...
+}
+</code></pre>
+<p><strong>2.2</strong> 接着让我们看看里面这个 Start 方法做了什么。同样位于 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-c++">inline int Start(uv_loop_t* event_loop,
+                 const std::vector&lt;std::string&gt;&amp; args,
+                 const std::vector&lt;std::string&gt;&amp; exec_args) {
+  //... 开始创建 Isolate 实例。 
+  Isolate* const isolate = NewIsolate(allocator.get(), event_loop);
+  //...
+  {
+    //... 又是一个 Start 。
+    exit_code = Start(isolate, isolate_data.get(), args, exec_args);
+  }
+  // isolate 销毁。
+  isolate-&gt;Dispose();
+  //...
+  return exit_code;
+}
+</code></pre>
+<p>参数检查什么的就略过了，上来先创建了一个 Isolate 实例，这个实例相当于是一个 js 独立环境，更粗略一点，比作一个页面。 中间又调用了一个 Start 方法，最终处理一下 isolate 的销毁。</p>
+<p><strong>3.</strong> 那接着来看这个 Start 方法（麻木了，都叫 Start 方法。）同样位于 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-c++">inline int Start(Isolate* isolate, IsolateData* isolate_data,
+                 const std::vector&lt;std::string&gt;&amp; args,
+                 const std::vector&lt;std::string&gt;&amp; exec_args) {
+  //... 创建一个 Context
+  Local&lt;Context&gt; context = NewContext(isolate); // 1.
+  //... 创建一个 Environment 实例，并开启 Start 方法。
+  Environment env(isolate_data, context, v8_platform.GetTracingAgentWriter());
+  env.Start(args, exec_args, v8_is_profiling); // 2.
+  {
+    //... 环境加载
+    LoadEnvironment(&amp;env);  // 3.
+    //...
+  }
+
+  {
+    //...
+    do {
+      // 事件循环启动。libuv 相关。 4.
+      uv_run(env.event_loop(), UV_RUN_DEFAULT);
+      //...
+    } while (more == true);
+    //...
+  }
+  //...
+  const int exit_code = EmitExit(&amp;env);
+  //... 善后工作，资源回收等等。
+  return exit_code;
+}
+</code></pre>
+<p>Context 又是 v8 的一个概念，相当于执行上下文，js 的执行上下文，可以实现互不影响。比如一个页面上嵌套了某个页面，那么他们之间的 js 上下文环境就不一样。此处需要关注 1 , 2，3，4 四个方法。</p>
+<p><strong>3.1</strong> 先来看看 1 ,如何创建的 Context。NewContext 同样位于 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-C++">Local&lt;Context&gt; NewContext(Isolate* isolate,
+                          Local&lt;ObjectTemplate&gt; object_template) {
+  // 使用 v8 的 api 创建 Context。 
+  auto context = Context::New(isolate, nullptr, object_template);
+  // ...
+  {
+    // ... Run lib/internal/per_context.js
+    // 获取 per_context.js 文件的字符串。
+    Local&lt;String&gt; per_context = NodePerContextSource(isolate);
+    // 编译运行，v8的模板代码。
+    ScriptCompiler::Source per_context_src(per_context, nullptr);
+    Local&lt;Script&gt; s = ScriptCompiler::Compile(
+        context,
+        &amp;per_context_src).ToLocalChecked();
+    s-&gt;Run(context).ToLocalChecked();
+  }
+  return context;
+}
+
+</code></pre>
+<p>此方法不仅仅创建了一个 Context，而且还预加载执行了一段js。注意这个 NodePerContextSource 方法只有编译过才会有这个文件。</p>
+<p><strong>3.1.1</strong> 看一下这个方法.文件位于<a href="files://younode-path/out/Release/obj/gen/node_javascript.cc">node_javascript.cc</a> 中：</p>
+<pre><code class="language-C++">v8::Local&lt;v8::String&gt; NodePerContextSource(v8::Isolate* isolate) {
+    return internal_per_context_value.ToStringChecked(isolate);
+}
+static const uint8_t raw_internal_per_context_value[] = { 39,...}
+static struct : public v8::String::ExternalOneByteStringResource {
+    const char* data() const override {
+        return reinterpret_cast&lt;const char*&gt;(raw_internal_per_context_value);
+    }
+    //...
+    v8::Local&lt;v8::String&gt; ToStringChecked(v8::Isolate* isolate) {
+        return v8::String::NewExternalOneByte(isolate, this).ToLocalChecked();
+    }
+} internal_per_context_value;
+</code></pre>
+<p>看到这里应该知道了，就是把 raw_internal_per_context_value 这个数组转成 v8 的字符串返回出去。那么问题来了，这个数组里面到底是什么东西呢。</p>
+<p><strong>3.1.2</strong> 猜也没法猜，那就打印一下呗。打印数组相关代码如下：</p>
+<pre><code class="language-C++">#include &lt;string&gt;
+#include &lt;iostream&gt;
+static const unsigned char raw_internal_per_context_value[] = {39,...}
+int main() {
+    std::cout &lt;&lt; (char *)raw_internal_bootstrap_loaders_value &lt;&lt; std::endl;
+}
+</code></pre>
+<p>g++ -o test test.cc &amp; ./test 就可以看到内容了。你会惊奇的发现，这不就是 lib/internal/per_context.js 文件的内容吗？是的，的确是这样，他就是把这段文本直接在编译期间就编成C++字符数组，为了在启动的时候加快启动速度，不至于现场去读文件从而引发文件加载速度的等等一系列问题。至于此 js 文件内容，在此先不做讲解。接着让我回到 4~5步的方法2当中。</p>
+<p>**3.2 ** env.Start 方法位于 <a href="https://github.com/nodejs/node/blob/master/src/env.cc">src/env.cc</a> 中：</p>
+<pre><code class="language-C++">void Environment::Start(const std::vector&lt;std::string&gt;&amp; args,
+                        const std::vector&lt;std::string&gt;&amp; exec_args,
+                        bool start_profiler_idle_notifier) {
+    //... 一大堆的 uv 操作等等。
+    // 设置了 process。
+    auto process_template = FunctionTemplate::New(isolate()); 
+    process_template-&gt;SetClassName(FIXED_ONE_BYTE_STRING(isolate(), &quot;process&quot;));
+    // ...
+}
+</code></pre>
+<p>可以看到其中设置了 process 是什么，此处设置了之后，在js里面就可以直接拿到 process 变量了。</p>
+<p><strong>3.3</strong> LoadEnvironment 方法在 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-C++">void LoadEnvironment(Environment* env) {
+  //...
+  // 加载 lib/internal/bootstrap/loaders.js 和 node.js 进来。
+  // FIXED_ONE_BYTE_STRING 就是一个转换字符串的宏。
+  Local&lt;String&gt; loaders_name =
+      FIXED_ONE_BYTE_STRING(env-&gt;isolate(), &quot;internal/bootstrap/loaders.js&quot;);
+  // LoadersBootstrapperSource 是获取 loaders.js 的文件内容。 GetBootstrapper 方法是用来
+  // 执行 js 的。
+  MaybeLocal&lt;Function&gt; loaders_bootstrapper =
+      GetBootstrapper(env, LoadersBootstrapperSource(env), loaders_name);
+  //...
+  // 获取 global 对象
+  Local&lt;Object&gt; global = env-&gt;context()-&gt;Global();
+  //...
+  // 暴露 global 出去，在 js 中可以访问。
+  global-&gt;Set(FIXED_ONE_BYTE_STRING(env-&gt;isolate(), &quot;global&quot;), global);
+
+  // 创建bind,linked_binding,internal_binding
+  Local&lt;Function&gt; get_binding_fn =
+      env-&gt;NewFunctionTemplate(GetBinding)-&gt;GetFunction(env-&gt;context())
+          .ToLocalChecked();
+  //...
+
+  // 执行 internal/loaders.js,node.js 里面的方法。
+  if (!ExecuteBootstrapper(env, loaders_bootstrapper.ToLocalChecked(),
+                           arraysize(loaders_bootstrapper_args),
+                           loaders_bootstrapper_args,
+                           &amp;bootstrapped_loaders)) {
+    return;
+  }
+  //...
+}
+
+static void GetBinding(const FunctionCallbackInfo&lt;Value&gt;&amp; args) {
+  // ... 通过参数获取模块名。
+  Local&lt;String&gt; module = args[0].As&lt;String&gt;();
+  //... 获取内部模块。此处就是通过2.1步骤中的 RegisterBuiltinModules 宏处理之后的东西来获取的。
+  node_module* mod = get_builtin_module(*module_v);
+  Local&lt;Object&gt; exports;
+  if (mod != nullptr) {
+    // 调用模块初始化方法。
+    exports = InitModule(env, mod, module);
+  }
+  // ... 设置返回值。
+  args.GetReturnValue().Set(exports);
+}
+</code></pre>
+<p>代码很长，但是条理还是挺清晰的。这里进行了一些绑定操作和一些初始化方法的调用逻辑。此处也可以知道，GetBinding 类似的东西是什么。调用的 js 如何执行需要和 js 一起看才能明白。此处先不讲解了。</p>
+<p><strong>3.4</strong> uv_run 这个方法此处也不细讲了。 libuv 这个库还没有详细了解。等待了解之后，补上 libuv 的相关调用分析，此处我们知道，在这里开始执行事件循环了。</p>
+<h2 id="结语">结语</h2>
+<p>讲了这么多，大家应该对 nodejs 的启动流程有了一个大致的了解了吧。虽然开头说少点源码，可是后来还是夹杂了很多的源码，哈哈，有一种上当的感觉。后面再讲讲模块加载，libuv加载的相关东西。这次分析就到此结束吧，大家休息~</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-2">
+              <h3 class="post-title">
+                nodejs 启动流程分析（2）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

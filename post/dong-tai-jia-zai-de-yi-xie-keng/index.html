@@ -1,0 +1,244 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>动态加载的一些坑 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              动态加载的一些坑
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h1 id="背景">背景</h1>
+<p>前一段时间，做了一个需求，需要动态加载一个so，还有一个classes.dex，还有一些资源。看上去是一个还行的需求，原理就是通过 classloader 进行动态加载，知易行难，真正做起来，还是遇到了下面的这些坑。</p>
+<!-- more -->
+<h1 id="问题">问题</h1>
+<h2 id="0x01类冲突">0x01类冲突</h2>
+<p>什么是类冲突呢？就是说我们的代码中可能有两个一模一样的类，包名，类名都一模一样。有人可能会问，怎么会有这种情况呢？因为模块走的动态加载，没有走统一编译，这种问题就会变得无法避免。难免有人脑子想到一起，就产生了重复的类了。</p>
+<p>众所周知，java是通过classloader进行类加载的，类加载机制就是著名的双亲委派，不太了解的同学，我简单描述一下就是：<strong>如果有一家三代，就先去爷爷那里找有没有这个类，如果没有就去爸爸那里找，爸爸找不到就从儿子这里找，儿子找不到就 ClassNotFoundException 了。</strong> 所以，当我们进行动态加载的时候，一般都是使用 DexClassLoader （关于如何动态加载，这里不多说，网上文章很多），这个DexClassLoader会把参数里面的路径下的dex文件加载起来，那么你的类就可以通过这个 classloader 进行加载了。</p>
+<p>这个时候，问题就来了，如果有重名的类，已经加载过了，那么，你肯定就加载不到你自己的类了，这样加载到的类就不是你想要的那个类，错误就产生了。如何避免呢？先看如下代码：</p>
+<pre><code class="language-java">public class CustomClassLoader extends DexClassLoader {
+    private ClassLoader mParentClassLoader;
+    public CustomClassLoader(String dexPath, String optimizedDirectory, String libraryPath, ClassLoader parent) {
+        super(dexPath, optimizedDirectory, libraryPath, new ClassLoader() {
+            @Override
+            public Class&lt;?&gt; loadClass(String name) throws ClassNotFoundException {
+                return null;
+            }
+        });
+        mParentClassLoader = parent;
+    }
+    @Override
+    public Class&lt;?&gt; loadClass(String name) throws ClassNotFoundException {
+        Class&lt;?&gt; clazz = null;
+        try {
+            clazz = super.loadClass(name);
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (clazz != null) {
+            return clazz;
+        }
+        if (mParentClassLoader == null) {
+            return null;
+        }
+        return mParentClassLoader.loadClass(name);
+    }
+    //....
+}
+</code></pre>
+<p>可以看到，我们自定义了一个CustomClassLoader继承自DexClassLoader，有两个重点：</p>
+<ul>
+<li>super() 调用的第三个参数传了一个重写了 loadClass 的方法，里面直接返回null，这个参数是父classloader的一起，这里就是把爸爸设置成一个什么都没有的 classloader。如果不设置，在安卓6.0以下都会报一个错误，父classloader不能为null的错误。</li>
+<li>loadClass() 方法，先调用super.loadClass() 方法，出异常再调用传递进来的真正的爸爸classloader加载。</li>
+</ul>
+<p>通过这样一个逻辑，就能保证先加载自己的类，再去加载爷爷和爸爸那里的类了。这样即使内存里面已经有了这个类，通过这个加载逻辑也能加载成功自己的类了。不过这样就违背了java的双亲委派机制，不过这也是没有办法的事情，java自己也违背过，哈哈哈。</p>
+<h2 id="0x02-资源加载不起来">0x02 资源加载不起来</h2>
+<p>我们的classes.dex 和资源文件不是同一个apk，也就是说他们不是一起进行打包的，这就带来了另外一个问题，两边分开进行打包，资源id对不上。要解决这个问题，就要把我们的资源apk路径加载到系统寻找资源的路径上面来，关键方法如下：</p>
+<pre><code class="language-java">	public static boolean addResource(Context context, String apkDir) {
+        if (TextUtils.isEmpty(apkDir)) {
+            return false;
+        }
+
+        try {
+            Method m = getAddAssetPathMethod();
+            Log.e(&quot;getAddAssetPathMethod m = &quot; + m);
+            if (m != null) {
+                int ret = (int) m.invoke(context.getAssets(), apkDir);
+                Log.e(&quot;invoke ret = &quot; + ret);
+                return ret &gt; 0;
+            }
+        } catch (Exception e) {
+            Log.d(&quot;invoke method error ! &quot;, e.toString());
+        }
+
+        return false;
+    }
+
+    private static Method getAddAssetPathMethod() {
+        Method m = null;
+        Class c = AssetManager.class;
+
+        if (Build.VERSION.SDK_INT &gt;= 24) {
+            try {
+                m = c.getDeclaredMethod(&quot;addAssetPathAsSharedLibrary&quot;, String.class);
+                m.setAccessible(true);
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+            return m;
+        }
+
+        try {
+            m = c.getDeclaredMethod(&quot;addAssetPath&quot;, String.class);
+            m.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
+        return m;
+    }
+</code></pre>
+<p>然后自己构造一个 ContextThemeWrapper类，进行资源的查找。大致实现如下：</p>
+<pre><code class="language-java">public class ResourcesContext extends ContextThemeWrapper {
+    private final ClassLoader mNewClassLoader;
+    Resources mNewResources;
+    public ResourcesContext(Context base, int themeres, ClassLoader cl, Resources r) {
+        super(base, themeres);
+        mNewResources = r;
+        mNewClassLoader = cl;
+    }
+    @Override
+    public Resources getResources() {
+        if (mNewResources != null) {
+            return mNewResources;
+        }
+        return super.getResources();
+    }
+}
+</code></pre>
+<p>通过传递进来的 mNewResources 进行资源的查找。最终使用这个类进行资源的查找，通过context去查找资源的方法如下：</p>
+<pre><code class="language-java">resourceContext.getString(R.xxx);
+</code></pre>
+<p>必须通过这个resourceContext进行资源的查找。</p>
+<p>这样我们就解决了资源查找的问题，还有一个问题，就是资源id错乱对不上的问题。这个解决比较简单，就是把所有的id在初始化的时候统一进行一次重新赋值，让dex中的id都被赋值为资源apk中的id值。</p>
+<h2 id="0x03-资源错乱">0x03 资源错乱</h2>
+<p>在demo中运行良好，兴高采烈去客户端进行集成。一集成完毕，就发现app莫名奇妙的崩溃，很多资源找不到， 而且基本是什么资源都会崩溃。找了很久问题的根源，发现是资源id冲突。看来只能在我们自己编译资源apk的时候，进行资源id的修改了。那么aapt这个工具就闪亮登场了。在build.gradle中的android节点加入：</p>
+<pre><code>aaptOptions {
+        additionalParameters  &quot;--package-id&quot;, &quot;0x66&quot;,&quot;--allow-reserved-package-id&quot;
+    }
+    buildToolsVersion '28.0.3'
+</code></pre>
+<p>0x66 是自己定义的id，这样我们生成的资源就都是0x66开头的了，而系统默认都是 0x7f开头。注意此工具必须在高版本的gradle中才能使用。</p>
+<h1 id="总结">总结</h1>
+<p>动态加载过程中，资源问题是最令人头痛的一个地方，好在也会有各种各样的办法去修复他。欢迎大家一起交流。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/chromium-mo-xing-xian-cheng-jie-shao">
+              <h3 class="post-title">
+                Chromium-模型、线程介绍
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>第二个职业年头 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              第二个职业年头
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/live" class="post-tag">
+                  # live
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="前言">前言</h2>
+<p>毕业已经一年半了。也经历了两次公司年会。感慨时光匆匆，岁月的路上又有风景逝去，回首也无法回去。</p>
+<p>这篇文章用来干嘛呢，主要是记录一下自己的成长历程，一些变化。</p>
+ <!-- more --> 
+<h2 id="技术方面">技术方面</h2>
+<ul>
+<li>步入社会，第一个岗位是安卓开发。个人因为安卓手机，爱上了安卓应用，从而步入了安卓开发的阵营。我进入的是容器开发组。实际上我是进入了一个相对来说更高端的小组，需要研究底层原理，研究webview的各种接口。还要编译crosswalk，编译chromium等等浏览器相关的东西。一开始，我是崩溃的。我是半路出家，才会做一些基本的界面开发，明白一些Activity的回调方法。现在让我搞这么底层的东西，很方。方也没办法，硬着头皮搞吧。还好有几个学长带着，有问题就请教他们。现在想来，他们是我第一位社会导师，师傅领进门。感谢他们。一段时间后，慢慢就已经熟悉了起来。有一个技能得到了很大的提升，就是----谷歌。几乎我遇到的问题，谷歌一下，都能找到回答。原来很抗拒看英文的我，也不由得被英文回答的详细，具体所吸引。（后来，他们几位相继离职了。。。）</li>
+<li>加入了XCore开发。东哥，第二位师傅。好不容易了解了容器的工作，现在又要来搞XCore了。项目就不介绍了，类似于RN，Weex，但是我们速度更快，性能更好。我要桥接V8的一个内核。又是一个陌生的事情。对C++只停留在看的层面上，再一次硬着头皮上了。编译V8内核，问题很多，由于版本问题，很多问题没有答案，编译难度比较高。听闻Nodejs也用V8，翻了他们的源码，找到一些优化点。桥接完成后，还需要调通他们的调试协议，提供真机调试功能。参考RN，Weex的实现，界面相关的操作，还好处理一些，关键就是通信协议，很麻烦。好不容易找到一篇历史文档，补全了这个空白。最终安卓端，可以真机调试，除了在控制台打印局部变量有问题之外，其他功能比较完善了。</li>
+<li>做iOS端的大佬离职了……于是，我又一次换了语种。走上了OC的开发职业。iOS端流畅度和性能都比较好，但是有一个占了很大一部分的Crash，还有就是内存问题。Crash数量太大，导致无法上线。而无限列表会导致内存爆炸，应用随之闪退。除了平时开发功能外，基本都是在各种内存分析，查看内存占用，排查问题。后来受到东哥启发，分析是否是线程问题，遂将原来的模型一顿魔改，后来此Crash没有再次复现。内存问题也通过限制列表长度先暂时控制。为了提高访问速度，还做了一件事情，就是客户端去解析html。参照了东哥C++版的解析，写了OC版的解析，通过不断优化，速度还是挺快的。</li>
+<li>听说算法这边可以转岗过来，于是参加了面试，转岗到服务端了。过来就体验了一发服务端开发，上手spring，开发了前端界面。自学了Vue，ES6语法，webpack打包等工具，使用Nuxt.js开发了第一个ssr项目。在这里，学会了springboot，mybatis，mysql。</li>
+</ul>
+<p>这样看来，其实做的事情还是挺多的，安卓，iOS，前端，服务端，C++开发等，期间，买了很多的书来学习，不然跟不上节奏了。但是，我感觉不是很满意，做的事情虽然多，但是没有一个是很深入的。客户端开发已经饱和，迫使我往服务端转型。看到服务端的招聘要求，都是需要了解分布式，高并发等等，内心还是有点害怕的，毕竟没有接触过，面对未知的事物，人第一反应总是恐惧的。然而恐惧也没有用，于是赶紧下单买了几本书，准备恶补了。</p>
+<h2 id="生活方面">生活方面</h2>
+<ul>
+<li>做事还是有很多地方会犹豫。比如，有个问题不清楚，本来直接开口问一下别人，就会一下得到结果，但是我就会犹豫徘徊，先把所有可以搜查的东西看完，不到最后一刻，张不开嘴。不果断，还体现在股票投资上。本来20块，想上车了，犹豫犹豫，结果22块钱还是没有上车，错过机会。还有卖的时候，本来30块卖掉，赚20%，结果想看看能不能涨，结果一直跌到亏20%，都没有卖掉，内心想着肯定会回来的。最近看了笑傲股市一书，豁然开朗，止损一定要果断。止盈也要迅速。就是赚不了太多，但也不会亏的倾家荡产。这都是做事犹豫的方面。</li>
+<li>脾气有点急躁。容易和女朋友吵架，90%应该是这个原因。</li>
+<li>锻炼身体，已经参加了散打培训。希望自己坚持下去，两年后，有那种威严的气质。</li>
+</ul>
+<h2 id="最后">最后</h2>
+<p>来年加油。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/2016-nian-du-zong-jie">
+              <h3 class="post-title">
+                2016年度总结
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

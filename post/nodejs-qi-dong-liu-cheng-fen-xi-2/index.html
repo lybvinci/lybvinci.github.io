@@ -1,0 +1,247 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>nodejs 启动流程分析（2） | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              nodejs 启动流程分析（2）
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="前言">前言</h2>
+<p>上篇 <a href="https://www.jianshu.com/p/c02fec0defcf">nodejs 启动流程分析</a>中，遗留了几个问题。这一篇，主要讲讲模块加载流程。大家都应该熟悉 timer 模块的相关功能。我们就以 timer 为引子，一步步看下去吧。</p>
+ <!-- more --> 
+<h2 id="c-init-方法开始">C++ init 方法开始</h2>
+<p>下列函数都在 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a> 中：</p>
+<pre><code class="language-c++">void Init(std::vector&lt;std::string&gt;* argv,
+          std::vector&lt;std::string&gt;* exec_argv) {
+  ...
+  // 注册内部模块。
+  RegisterBuiltinModules();
+  ...
+}
+</code></pre>
+<p>乍一看，这个 RegisterBuiltinModules 方法应该就是关键所在了。那看看他是什么吧。</p>
+<pre><code class="language-C++">void RegisterBuiltinModules() {
+#define V(modname) _register_##modname();
+  NODE_BUILTIN_MODULES(V)
+#undef V
+}
+</code></pre>
+<p>原来不是方法，而是一个宏定义。那我们再看看 NODE_BUILTIN_MODULES 这个是什么吧。下列文件位于<a href="https://github.com/nodejs/node/blob/master/src/node_internals.h">src/node_internals.h</a> 中：</p>
+<pre><code class="language-C++">#define NODE_BUILTIN_MODULES(V)                                               \
+  NODE_BUILTIN_STANDARD_MODULES(V)                                            \
+  NODE_BUILTIN_OPENSSL_MODULES(V)                                             \
+  NODE_BUILTIN_ICU_MODULES(V)
+</code></pre>
+<p>乖乖，又是一个宏。简直就是宏的地狱。让我们耐着性子，再往下看看。</p>
+<pre><code>#define NODE_BUILTIN_STANDARD_MODULES(V)                                      \
+    V(async_wrap)                                                             \
+    ...
+    V(timer)                                                                 \
+</code></pre>
+<p>其他两个宏类似，就不放上来了。在这个宏里面，貌似看到了想要查找的 timer 。那我们把这个三个宏合成一下，看看是什么吧。</p>
+<pre><code class="language-C++">_register_timer();
+</code></pre>
+<p>其他类似，不再赘述。原来这个宏就是依次调用了 _register_xx 方法。插一句，在 C++ 宏里面，## 代表字符串连接。相当于用 ## 之前的字符串 拼接上 ## 之后的字符串。现在看来，找到这个 _register_timer() 方法就是关键了。全文搜索一下 _register_timer() 方法，发现无法找到。再尝试搜索一下 <em>register</em>  这个关键字，可以找到一个宏如下，在文件<a href="https://github.com/nodejs/node/blob/master/src/node_internals.h">src/node_internals.h</a>中：</p>
+<pre><code class="language-C++">#define NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, priv, flags)          \
+  static node::node_module _module = {                                        \
+    NODE_MODULE_VERSION,   /*版本号*/                                          \
+    flags,                 /*模块类型，builtin,internal,linked*/                \
+    nullptr,               /*nm_dso_handle. 未知*/                             \
+    __FILE__,              /*文件名*/                                          \
+    nullptr,               /*注册方法*/                                         \
+    (node::addon_context_register_func) (regfunc),    /*注册上下文*/            \
+    NODE_STRINGIFY(modname),          /*模块名*/                               \
+    priv,                             /*私有*/                                 \
+    nullptr                           /*下一个 node_module 模块节点*/            \
+  };                                                                          \
+  void _register_ ## modname() {                                              \
+    node_module_register(&amp;_module);                                           \
+  }
+</code></pre>
+<p>可以看到，这个宏定义了一个结构体，node_module 是在 <a href="https://github.com/nodejs/node/blob/master/src/node.h">src/node.h</a>里面定义的。这个宏把模块名，注册方法，私有指针，模块类型传递进来了。然后还定义了一个方法，就是我们要找的 _register_##modname方法。其中又调用了 mode_module_register 方法。此处我们先不着急看实现，而是先去看看是谁调用了这个宏。搜索下来发现，在文件<a href="https://github.com/nodejs/node/blob/master/src/node_internals.h">src/node_internals.h</a>中有这样一个宏：</p>
+<pre><code class="language-C++">#define NODE_MODULE_CONTEXT_AWARE_INTERNAL(modname, regfunc)                  \
+  NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_INTERNAL)
+</code></pre>
+<p>NODE_MODULE_CONTEXT_AWARE_INTERNAL 这个宏调用了上面的宏，并且将模块名，注册方法传递进来，私有变量传null，模块类型传内置模块类型。接着再看看谁调用了NODE_MODULE_CONTEXT_AWARE_INTERNAL。搜索可以看到很多处调用，我们找到我们关心的 <a href="https://github.com/nodejs/node/blob/master/src/timers.cc">src/timers.cc</a>文件查看：</p>
+<pre><code class="language-C++">void Initialize(Local&lt;Object&gt; target,
+                       Local&lt;Value&gt; unused,
+                       Local&lt;Context&gt; context) {
+  ...
+  env-&gt;SetMethod(target, &quot;getLibuvNow&quot;, GetLibuvNow);
+  ...
+  target-&gt;Set(env-&gt;context(),
+              FIXED_ONE_BYTE_STRING(env-&gt;isolate(), &quot;immediateInfo&quot;),
+              env-&gt;immediate_info()-&gt;fields().GetJSArray()).FromJust();
+}
+NODE_MODULE_CONTEXT_AWARE_INTERNAL(timers, node::Initialize)
+</code></pre>
+<p>可以看到，模块名参数就是 timers, 初始化方法参数传递的是 Initialize 方法。到这，算是找到调用根源了。那我们接着看看 node_module_register 方法干了些什么。此方法在 <a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a>中：</p>
+<pre><code class="language-C++">extern &quot;C&quot; void node_module_register(void* m) {
+  struct node_module* mp = reinterpret_cast&lt;struct node_module*&gt;(m);
+  ...
+  else if (mp-&gt;nm_flags &amp; NM_F_INTERNAL) {
+    mp-&gt;nm_link = modlist_internal;
+    modlist_internal = mp;
+  }
+  ...
+}
+</code></pre>
+<p>你会惊奇的发现，这里仅仅是把所有的模块依次链接起来，形成一个链表。没有调用呀？没有初始化啊？此处注意一下变量<strong>modlist_internal</strong>,后面会用到。这里有一个 GetInternalBinding 。他被绑定到 global 对象上，会被 js 调用。此方法是必须结合js源码才能明白出处。此方法在<a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a>中：</p>
+<pre><code class="language-C++">static void GetInternalBinding(const FunctionCallbackInfo&lt;Value&gt;&amp; args) {
+  ...//获取参数名。
+  Local&lt;String&gt; module = args[0].As&lt;String&gt;();
+  ...//获取内部模块。
+  node_module* mod = get_internal_module(*module_v);
+  if (mod != nullptr) {
+      // 初始化。
+    exports = InitModule(env, mod, module);
+  }
+  ...
+}
+</code></pre>
+<p>让我们看看 get_builtin_module 方法，此方法在<a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a>中：</p>
+<pre><code class="language-C++">node_module* get_internal_module(const char* name) {
+  return FindModule(modlist_internal, name, NM_F_INTERNAL);
+}
+
+inline struct node_module* FindModule(struct node_module* list,
+                                      const char* name,
+                                      int flag) {
+  struct node_module* mp;
+  for (mp = list; mp != nullptr; mp = mp-&gt;nm_link) {
+    if (strcmp(mp-&gt;nm_modname, name) == 0)
+      break;
+  }
+  ...
+  return mp;
+}
+</code></pre>
+<p>方法内部调用了 FindModule 方法。第一个参数熟悉吗?**modlist_internal!**就是通过上面的 RegisterBuiltinModules 方法来生成的模块。具体的查找过程也比较简单，就是遍历这个链表，一个个比较模块名，是否相同，然后拿到模块。再继续看一下 InitModule 方法，同样位于<a href="https://github.com/nodejs/node/blob/master/src/node.cc">src/node.cc</a>：</p>
+<pre><code class="language-C++">static Local&lt;Object&gt; InitModule(Environment* env,
+                                 node_module* mod,
+                                 Local&lt;String&gt; module) {
+  ...//直接调用node_module模块的注册上下文的方法，并传入对应的一些参数。
+  mod-&gt;nm_context_register_func(exports,
+                                unused,
+                                env-&gt;context(),
+                                mod-&gt;nm_priv);
+  return exports;
+}
+</code></pre>
+<p>回想下上面的 timer.cc 中的 Initialize 方法，此处就是调用的地点了。至此，模块就加载到程序当中了。</p>
+<h2 id="尾言">尾言</h2>
+<p>分析过程中，会遇到很多的宏处理，此时可以将宏一个个展开，然后写到纸上进行分析。否则一眼很难看的清全貌。</p>
+<p>通过本文，应该对 RegisterModules，和如何初始化模块应该有了一个大致的了解。但是你可能还是会有一些迷惑，比如 GetInternalBinding 这个方法谁调用的呢，下次来进行分析~</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/web-rong-qi-xiang-mu-zong-jie">
+              <h3 class="post-title">
+                Web容器项目总结
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

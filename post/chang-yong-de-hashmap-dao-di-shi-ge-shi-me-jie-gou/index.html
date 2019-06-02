@@ -1,0 +1,433 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>常用的HashMap到底是个什么结构 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              常用的HashMap到底是个什么结构
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="0x00-前言">0x00 前言</h2>
+<p>HashMap 是最常用的容器之一，应该没什么疑问了。可你到底了解他吗？网上已经有很多文章来总结 HashMap 了，我来写这篇，主要是为了记录自己阅读之后的一点点小感悟，如若有错误的地方，请大家指正。下文分析基于 <code>jdk1.8</code> 。</p>
+<!-- more -->
+<h2 id="0x01-一句话介绍">0x01 一句话介绍</h2>
+<p>HashMap 内部是一个 Node 类数组，每个节点存放对应的数据。</p>
+<h2 id="0x02-概述">0x02 概述</h2>
+<p>先来介绍下 HashMap ，主要依据来自 HashMap 的注释（熟悉的同学可以直接跳过到<code>0x03</code>部分）。</p>
+<p>1、HashMap 实现了 Map 接口，拥有 Map 的所有操作，具有以下特点：</p>
+<ul>
+<li>允许 <code>null</code> 的 key 和 value 。</li>
+<li>大致上，他和 HashTable 相同，但是 HashTable 是线程安全的，而 HashMap 非线程安全。出于此原因，HashMap 在性能上明显会优于 HashTable 。</li>
+<li>不保证顺序，原因在于其内在的原理，他是根据 key 的 hash 值来计算位置的，所以，顺序自然是无法保证的了。（到底怎么算的，往下看。）</li>
+</ul>
+<p>2、HashMap 的 get , put 在hash值比较均匀的情况下，操作都是常数级别的时间复杂度。一个非常重要的点是，capacity 不能设置太高，load factor 不能设置的太低。（这两个变量又是干嘛的呢，这里先卖个关子✧(≖ ◡ ≖✿)嘿嘿）。</p>
+<p>3、因为他不是线程安全的，所以可以通过 Collections.synchronizedMap 来包装，从而变成一个线程安全的 Map。</p>
+<p>4、拥有 fail-fast 特性。简单来说，就是在遍历的时候，发现元素被改变，就抛出异常。</p>
+<h2 id="0x03-解释几个变量">0x03 解释几个变量</h2>
+<h3 id="构造函数里面的-initialcapacity">构造函数里面的 initialCapacity</h3>
+<p>这个参数的意思比较明显，就是初始的 Map 长度。默认是 16。</p>
+<h2 id="nodekv-table">Node&lt;K,V&gt;[] table</h2>
+<p>Map 中真正存放元素的地方，可以看到他是一个 Node 数组。Node 结构比较简单，就是一个 key-value 组成的一个链表，其中还有 hash变量，和 next 变量。</p>
+<h3 id="float-loadfactor">float loadFactor</h3>
+<p>顾名思义，负载因子。默认值是0.75，是一个空间和时间上的权衡。具体怎么来的，可能是一个复杂的逻辑推算。</p>
+<h3 id="int-threshold">int threshold</h3>
+<p>阈值，Map 所能容纳的键值对数量。是根据 Map 中的数组长度*loadFactor计算出来的。看到这个，应该就可以想到，如果 loadFactor设置的太小，会有什么问题了。没错，如果设置太小，容量就会很小，导致空间上的一个浪费，大部分的位置都是空的，没有被充分利用。反之，如果设置太大，就会导致元素放置非常拥挤，查询起来效率就会变低。</p>
+<h2 id="0x04-方法分析">0x04 方法分析</h2>
+<h3 id="构造函数">构造函数</h3>
+<p>HashMap 有好几个构造函数，来看一个比较重要的吧。</p>
+<pre><code>    public HashMap(int initialCapacity, float loadFactor) {
+        // 如果传递进来的初始化数组的大小小于0，就是不合法，直接抛异常。
+        if (initialCapacity &lt; 0)
+            throw new IllegalArgumentException(&quot;Illegal initial capacity: &quot; +
+                                               initialCapacity);
+        // 如果大于最大的值，就让他等于最大值。
+        if (initialCapacity &gt; MAXIMUM_CAPACITY)
+            initialCapacity = MAXIMUM_CAPACITY;
+        if (loadFactor &lt;= 0 || Float.isNaN(loadFactor))
+            throw new IllegalArgumentException(&quot;Illegal load factor: &quot; +
+                                               loadFactor);
+        this.loadFactor = loadFactor;
+        // 根据 tableSizeFor 方法进行数组长度的对齐。
+        this.threshold = tableSizeFor(initialCapacity);
+    }
+    
+    // 数组长度的对齐。
+    static final int tableSizeFor(int cap) {
+        int n = cap - 1;
+        // 经过以下的变化，数组的长度一定是2^n了。 
+        n |= n &gt;&gt;&gt; 1;  // 1
+        n |= n &gt;&gt;&gt; 2;  // 2
+        n |= n &gt;&gt;&gt; 4;  // 3
+        n |= n &gt;&gt;&gt; 8;  // 4
+        n |= n &gt;&gt;&gt; 16; // 5
+        return (n &lt; 0) ? 1 : (n &gt;= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+    }
+</code></pre>
+<p>在这里给方法<code>tableSizeFor</code>举个🌰：</p>
+<pre><code>如果我设置cap为13，则13-1的二进制是：
+  0000 0000 0000 1100
+此时进行第一步：
+          0000 0000 0000 1100
+    &gt;&gt;&gt;1  0000 0000 0000 0110
+    |=    0000 0000 0000 1110
+第二步：
+          0000 0000 0000 1110
+    &gt;&gt;&gt;2  0000 0000 0000 0011
+    |=    0000 0000 0000 1111
+第三步：
+          0000 0000 0000 1111
+    &gt;&gt;&gt;4  0000 0000 0000 0000
+    |=    0000 0000 0000 1111
+……
+可以看出，后面应该全是 1111（2）了。最后加个1，就是16，2^4.
+有的同学可能不信，所以再举个更大的🌰：
+  0100 0110 0101 0110
+此时进行第一步：
+          0100 0110 0101 0110
+    &gt;&gt;&gt;1  0010 0011 0010 1011
+    |=    0110 0111 0111 1111
+第二步：
+          0110 0111 0111 1111
+    &gt;&gt;&gt;2  0001 1001 1101 1111
+    |=    0111 1111 1111 1111
+第三步：
+          0111 1111 1111 1111
+    &gt;&gt;&gt;4  0000 0111 1111 1111
+    |=    0111 1111 1111 1111
+……
+可以看到，最终结果还是一样。二进制有很多好玩的特性，如果能利用好，性能上的提升绝对不止一点半点。
+</code></pre>
+<h3 id="node节点类">Node节点类</h3>
+<p>包含一个 hash，key， value。</p>
+<h3 id="put">put</h3>
+<pre><code>public V put(K key, V value) {
+    // 实际调用 putVal 方法。此时可能有个疑问，key他自己不是有hashcode方法吗？为什么还要自己写一个？暂且按下，先看看 putVal 方法。 ①
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+    // 如果 tab 还没有被初始化，或者是空，则先进行 resize .
+    if ((tab = table) == null || (n = tab.length) == 0)
+        // n 就是tab的长度。 ③
+        n = (tab = resize()).length;
+    // 这里是重点，怎么定位？ (n-1)&amp;hash 来定位的。 ②
+    if ((p = tab[i = (n - 1) &amp; hash]) == null)
+        // 如果是null，则创建一个新的节点。
+        tab[i] = newNode(hash, key, value, null);
+    else {
+        Node&lt;K,V&gt; e; K k;
+        // 如果旧节点就是需要被put的节点，则将值直接进行替换。
+        // 可以看到他是根据 == 判断是否是同一个对象，或者 equals 方法来判断是否相等。
+        if (p.hash == hash &amp;&amp;
+            ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+            e = p;
+        // 如果是 红黑树，则调用红黑树的putTreeVal。
+        else if (p instanceof TreeNode)
+            e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+        else {
+            // 如果是链表，则一个一个往下寻找，
+            for (int binCount = 0; ; ++binCount) {
+                if ((e = p.next) == null) {
+                    // 如果一直找到结尾，都没找到,则创建一个新节点
+                    p.next = newNode(hash, key, value, null);
+                    // 如果链表的长度，已经大于了需要转成红黑树的长度，则将其转为红黑树
+                    if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                // 找到则终结循环
+                if (e.hash == hash &amp;&amp;
+                    ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        // 如果找到了对应的节点，进行一个替换
+        if (e != null) {
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                // 如果标志检查符合，或者原值为null，则进行赋值。
+                e.value = value;
+            // 节点可用完成通知
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    // 修改变更标志加一
+    ++modCount;
+    // 如果总的节点数量，大于了阈值，则进行扩容
+    if (++size &gt; threshold)
+        resize();
+    // 插入完毕通知
+    afterNodeInsertion(evict);
+    return null;
+}
+</code></pre>
+<p>讲讲②处，为什么这样定位呢？ (n - 1) &amp; hash 。n 是 table 的长度，是一个 2^n 的数字。一般情况下，如果有一个大于数组长度的位置，我们怎么来将其放入数组中呢？很简单，取模。对这个位置取模，得到的值肯定都是小于数组长度的。划重点！<code>所以这个 (n - 1) &amp; hash 也是取模！我们都知道，n-1 的二进制，都是高位0 + 低位多个1组成的。此时和 hash 值相与，与出来的值，肯定是小于 n-1 的，这就达到了一个取模的效果。</code>空说无凭，还是举个🌰。</p>
+<pre><code>假设 n = 16, n-1的二进制即为 1111 。再随便写个32位的hash。
+    0000 0000 0000 1111
+&amp;   1001 1101 1110 0110
+=   0000 0000 0000 0110 = 6 &lt; 16
+</code></pre>
+<p>方法非常巧妙，避免了取模，大大提升了索引的速度。</p>
+<p>此时引出了①的原因。先看看hash的尊容。</p>
+<pre><code>// hash 方法。
+static final int hash(Object key) {
+    int h;
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
+}
+</code></pre>
+<p>来说说这个 hash 方法。可以看到如果是 null，则返回的是0.非null，则调用了key#hashCode方法，并且异或了hash值右移16位。分析②的时候，可以看到定位是根据hash值和n-1相与来确定位置的，这就是为什么要重新一个hash的原因。哈？为什么？根据②的🌰，可以看出来，定位和hash值的前几位都没有关系，只和 n-1 的二进制长度的位数有关。这就带来一个问题，非常容易产生冲突，随机性被降低了，毕竟高xx位都没有参与运算，就那么几位，肯定容易产生冲突。异或这个操作，将高位也拉了进来，大大提高了参与度，hash散列也会更好。还是举一个🌰。</p>
+<pre><code>       1110 0010 0011 1101      1110 0000 0011 1101
+&gt;&gt;16   0000 0000 1110 0010      0000 0000 1110 0000
+^=     1110 0010 1101 1111      1110 0000 1101 1101
+可以看到，如果不进行这个操作，这两个元素肯定是在一个定位上的，如果加上高位操作，则被分散了。
+</code></pre>
+<h3 id="resize">resize</h3>
+<p>resize是用来对map进行扩容的方法。对应上面的注释③。</p>
+<pre><code>final Node&lt;K,V&gt;[] resize() {
+    Node&lt;K,V&gt;[] oldTab = table;
+    // 获取旧的数组长度。
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;
+    int oldThr = threshold;
+    int newCap, newThr = 0;
+    if (oldCap &gt; 0) {
+        // 如果已经大于了最大值，就设置阈值最大，直接返回。
+        if (oldCap &gt;= MAXIMUM_CAPACITY) {
+            threshold = Integer.MAX_VALUE;
+            return oldTab;
+        }
+        else if ((newCap = oldCap &lt;&lt; 1) &lt; MAXIMUM_CAPACITY &amp;&amp;
+                 oldCap &gt;= DEFAULT_INITIAL_CAPACITY)
+            newThr = oldThr &lt;&lt; 1; // 阈值翻倍。
+    }
+    else if (oldThr &gt; 0)
+        // 如果阈值大于0&amp;旧的数组长度小于1，则将新数组长度设置为阈值的大小。
+        newCap = oldThr;
+    else {               // 上述条件都不符合，则使用初始值。。
+        newCap = DEFAULT_INITIAL_CAPACITY;
+        // 新的阈值是默认负载因子*默认数组长度的值。
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);  
+    }
+    // 如果新阈值为0
+    if (newThr == 0) {
+        根据是否在范围内，对新阈值赋值，方法同上。
+        float ft = (float)newCap * loadFactor;
+        newThr = (newCap &lt; MAXIMUM_CAPACITY &amp;&amp; ft &lt; (float)MAXIMUM_CAPACITY ?
+                  (int)ft : Integer.MAX_VALUE);
+    }
+    threshold = newThr;
+    @SuppressWarnings({&quot;rawtypes&quot;,&quot;unchecked&quot;})
+        Node&lt;K,V&gt;[] newTab = (Node&lt;K,V&gt;[])new Node[newCap];
+    table = newTab;
+    if (oldTab != null) { // 如果是扩容，不是初始化，则需要进行元素迁移。
+        for (int j = 0; j &lt; oldCap; ++j) {
+            Node&lt;K,V&gt; e;
+            if ((e = oldTab[j]) != null) {
+                // e 已经引用了就数据，所以将数组对应位置清空，利于垃圾回收。
+                oldTab[j] = null;
+                if (e.next == null)  // ① 如果链表只有一个元素，则将其放入新数组对应的位置，计算方法已经说过。
+                    newTab[e.hash &amp; (newCap - 1)] = e;
+                else if (e instanceof TreeNode) //②  如果是一颗红黑树，则利用 split 方法来进行拆树。
+                    ((TreeNode&lt;K,V&gt;)e).split(this, newTab, j, oldCap);
+                else { // 如果还是链表。 ③
+                    Node&lt;K,V&gt; loHead = null, loTail = null;
+                    Node&lt;K,V&gt; hiHead = null, hiTail = null;
+                    Node&lt;K,V&gt; next;
+                    do {
+                        // next 是 e 的下一个元素
+                        next = e.next;
+                        if ((e.hash &amp; oldCap) == 0) { // e 的 hash 值和旧的数组长度相与为0 ③-1
+                            if (loTail == null)  // 如果低位尾部是null，则低位头是 e.
+                                loHead = e;
+                            else  // 否则，低位尾部接着往下链。
+                                loTail.next = e;
+                            loTail = e; // 尾指向下一个。
+                        }
+                        else {  // 否则，对高位尾操作，操作和低位类似。
+                            if (hiTail == null)
+                                hiHead = e;
+                            else
+                                hiTail.next = e;
+                            hiTail = e;
+                        }
+                    } while ((e = next) != null);
+                    if (loTail != null) { // 将低位链表放置到 j 的位置上。
+                        loTail.next = null;
+                        newTab[j] = loHead;
+                    }
+                    if (hiTail != null) { // 将高位组成的链表放置到 j + oldCap 位置上。
+                        hiTail.next = null;
+                        newTab[j + oldCap] = hiHead;
+                    }
+                }
+            }
+        }
+    }
+    return newTab;
+}
+</code></pre>
+<p>上面一部分都很好理解。重点看看①-③这几个地方。先画个图吧。比如一个 map 的的长度是4，里面如此放置元素（为了举例，假设可以放置这么多）：</p>
+<pre><code>[0] -&gt; (0)  //第①种，元素0的后面没有任何元素了，所以直接进行放置
+[1] -&gt; (             1               
+                5          25
+              9   17    21    29
+               13                33   ) // 这就属于②了，链表已经被转化为一颗红黑树了。所以需要将树给拆掉。
+[2] -&gt; (2 -&gt; 6 -&gt; 10 -&gt; 14) // 这就属于第③种情况了,需要将此链表拆开，放置到新的数组当中。
+[3] -&gt; (3)
+</code></pre>
+<p>在此着重讲讲第三种情况。还是上图。</p>
+<pre><code>[0]                                 [0]
+[1]                                 [1]
+[2]-&gt; (2 -&gt; 6 -&gt; 10 -&gt; 14) -----&gt;   [2] -&gt; (2 -&gt; 10)
+[3]                                 [3]
+                                    [4]
+                                    [5]
+                                    [6] -&gt; (6 -&gt; 14)
+                                    [7]
+                                    [8]
+此处看看怎么迁移。先看看他们和旧长度4相与是否为0。
+            2       6       10      14 
+二进制      0010    0110    1010    1110
+&amp;          0100    0100    0100    0100
+=          0000    0100    0000    0100
+列出4和8的二进制数：
+            4       8
+二进制      0100    1000
+n-1        0011    0111
+</code></pre>
+<p>可以看出一些规律，长度的二进制总是只有一个1，其余位都是0。而位置计算是 hash&amp;n-1,可以发现，新的位置不过是hash&amp;2n-1，用二进制来看，就是左移了一位补1.所以和原来位置唯一的差别在哪呢，就在这个左移出来的1身上。这就是为什么③-1中为什么判断<code>e.hash &amp; oldCap</code>。如果长度二进制为1的那个位置是0的元素，就留在原地，反之，则放置到 <code>j +oldCap</code> 位置。因为扩容是两倍，所以就是原来的位置加上一个原数组长度。</p>
+<h3 id="get">get</h3>
+<p>get 方法和 put 方法非常类似。只不过 get 是 get 返回，put 是 set 值进去。内部调用了 getNode 方法。</p>
+<h2 id="remove">remove</h2>
+<p>remove 和 put 方法也非常类似，就是找到对应的元素，进行删除而已。</p>
+<h3 id="containskey">containsKey</h3>
+<pre><code>public boolean containsKey(Object key) {
+    // 也是调用了get方法调用的内部方法，判断返回的值是否为null。所以和 get 方法只是一个用不用返回值的区别。
+    return getNode(hash(key), key) != null;
+}
+</code></pre>
+<h3 id="size">size</h3>
+<p>直接返回了记录元素个数的 size 变量。</p>
+<h3 id="clear">clear</h3>
+<p>遍历数组，挨个进行 null 赋值。</p>
+<h3 id="containsvalue">containsValue</h3>
+<p>遍历数组和对应的链表，查看 value 是否相等。</p>
+<h3 id="红黑树相关的函数">红黑树相关的函数</h3>
+<p>这些函数是java8新增的，如果链表过长，一个个遍历非常影响效率，所以 map 内部将他变成了一颗红黑树，此文就不进行详解了。这部分放到 TreeMap 分析的时候再进行描述。</p>
+<h2 id="0x05-喝口水来个总结">0x05 喝口水，来个总结</h2>
+<p>本文讲解了 HashMap 中的一部分核心问题，没有全部都讲下来。还有resize线程安全问题，红黑树相关的部分没有讲解。线程安全这个，后面也会单独来一篇进行讲解。红黑树则放到 TreeMap 的分析当中。如果文中有误，请大家指出，感激不尽。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo">
+              <h3 class="post-title">
+                日志SLF4J解惑
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

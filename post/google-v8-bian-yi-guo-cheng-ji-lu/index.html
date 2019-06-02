@@ -1,0 +1,156 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Google-V8编译过程记录 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Google-V8编译过程记录
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="0x00-前言">0x00 前言</h2>
+<p>由于要使用v8引擎，所以要编译V8。而且我要编译的是V8的安卓版本。更奇怪的是我编译的是NativeScript/android-v8的一个支持。最后要生成一个.a文件。</p>
+<!-- more --> 
+<h2 id="0x01-介绍地址">0x01 介绍地址</h2>
+<ul>
+<li><a href="https://github.com/NativeScript">NativeScript</a>/<strong><a href="https://github.com/NativeScript/android-v8">android-v8</a></strong></li>
+<li><a href="https://github.com/v8">v8</a>/<strong><a href="https://github.com/v8/v8">v8</a></strong></li>
+</ul>
+<h2 id="0x02-下载过程中的问题">0x02 下载过程中的问题</h2>
+<ul>
+<li>首先就是要下载大量代码，很容易出现git失败的结果，这个时候一个稳定的翻墙工具是很有必要的。git设置翻墙比较简单，如下两条命令就可以解决：</li>
+</ul>
+<pre><code>git config --global http.proxy = &quot;xx.xx.xx.xx&quot; // http代理
+git config --global https.proxy = &quot;http://127.0.0.1:1080&quot;     //https代理  代理是自己的代理地址。如果是socks，则http:--&gt;socks5:之类的。
+</code></pre>
+<p>这个时候git就可以顺畅的访问git了，下载速度也是火力全开。如果遇到EOF大多数情况是你自己的网络不好，这个时候相当于下载中断了，又要重新下载了。最好设置：</p>
+<pre><code>git config --global https.postBuffer = 524288000
+</code></pre>
+<p>然后就按照README.md文件来下载配置文件之类的东西了。地址就是我发的地址，就不重复放上了。</p>
+<p>如果按照android-v8的方式来配置代码，他会有一个setup-build文件，拉下来之后执行这个脚本就可以简化工作。此脚本接受一个参数，是分支/tag名字，注意，一定要按照他说的最新版本，而不是v8的最新版本。因为他自己会有一个patch合进去，如果是不对的分支，则代码不能生效，还会出现一大堆莫名其妙的问题。</p>
+<h2 id="0x03-下载代码时的深坑">0x03 下载代码时的深坑</h2>
+<p>由于一开始不理解两个东西有什么差别，我直接拉最新的v8分支的代码。执行最开始gclient sync的时候会发现有一个llvm的东西一直下载不下来，一直出现：</p>
+<pre><code>_______running 'download from google storage --no_resume --platform=linux* --no _auth --bucket'………………
+</code></pre>
+<p>这就很忧伤了，一看应该就是什么东西访问了网站，然后这个网站实际上无法访问……查看了代码，发现是由于depot_tools里面的gsutil.py里面定义了2个写死的网络地址，分别是：</p>
+<pre><code>https://storage.googleapis.com/pub/
+https://www.googleapis.com/storage/v1/b/pub/o/
+</code></pre>
+<p>在命令行里面ping一下，发现完全无法访问。只有git配置了翻墙，而命令行并不能翻墙。搜了一大堆的东西，发现了一个好东西，proxychains。此神器可以配置全局socks5访问。配置也相当简单。具体配置查看<a href="http://www.tuicool.com/articles/rUNFF3">proxychains配置</a>。
+使用时只要带上proxychains 就可以了。</p>
+<h2 id="0x04-编译的深坑">0x04 编译的深坑</h2>
+<p>首先，他自己本身的build_fat脚本里面，定义了4个类型的编译设备，分别有android_arm,android_arm64,android_ia32,android_x64四种，一般情况是不需要编译这么多的，所以可以进入脚本以后，删除掉后两种类型的编译要求，找到ARCH_RR变量，删除不想要的类型。同时，把NDK_BUILD_TOOLS_ARR里面也删除对应的。
+还有个很重要的，如果编译完成了，最后出现报错，找不到*.a文件，就需要修改脚本中的V8_LIBS_PATH,后面的obj.target/src --&gt;obj.target/tools/gyp才可以，因为原脚本提供的src目录下面可能根本就没有这些文件。不知道是什么时候的版本了……</p>
+<h2 id="0x05-总结">0x05 总结</h2>
+<p>一定要看清楚编译的什么版本的，然后脚本根据版本去改变，而不是一成不变。否则将会产生无尽的错误。本文写于2016-09-12.之后的版本改变，此文可能不能生效，但大致思路总归是有点用的。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/di-er-ge-zhi-ye-nian-tou">
+              <h3 class="post-title">
+                第二个职业年头
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

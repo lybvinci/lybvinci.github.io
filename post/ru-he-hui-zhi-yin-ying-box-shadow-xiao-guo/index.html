@@ -1,0 +1,175 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>如何绘制阴影box-shadow效果 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              如何绘制阴影box-shadow效果
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="网上搜索到的做法">网上搜索到的做法</h2>
+<ul>
+<li>加一个背景，android:background=&quot;@android:drawable/dialog_holo_light_frame 这个安卓自带的图片，设置为背景，就带有阴影效果。</li>
+<li>通过使用5.0以上的方法，<code>View.setElevation()</code> 方法，可以绘制阴影效果。</li>
+<li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
+</ul>
+<!-- more -->
+<h2 id="为何还要自己做的原因">为何还要自己做的原因</h2>
+<p>针对以上的所有方式，都不能很好的解决，原因有下：</p>
+<ul>
+<li>方案一，不能动态的改变背景颜色，而且如果view本身需要设置一个背景，此时有两个背景就会冲突，所以并不是通用的解决方案。</li>
+<li>方案二，现有的api不能支持所有的安卓版本绘制阴影，而且不能修改阴影颜色。</li>
+<li>方案三，改变view的大小，对布局有所影响。</li>
+</ul>
+<h2 id="解决方案">解决方案</h2>
+<h3 id="方案10">方案1.0</h3>
+<p>最开始，想到了系统<code>Paint</code>自带的方法。</p>
+<pre><code>//阴影只能在View.LAYER_TYPE_SOFTWARE 环 境 下 工 作 
+setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+paint.setShadowLayer(10, 10, 5, Color.BLACK);
+</code></pre>
+<p>通过这种方式，的确可以画出来阴影效果，但是此时并不能将阴影画在view的外面，其实还是画在了view的上面，也就是间接改变了view的大小。而且还必须设置<code>View.LAYER_TYPE_SOFTWARE</code>。</p>
+<pre><code>//首先获取已经被裁减过的画布大小
+clipBounds = canvas.getClipBounds();
+//改变画布大小 也可以使用insert方法。
+clipBounds.set(left, top, right, bottom);
+//将画布的大小进行替换，达到增大画布的效果。Region.Op.REPLACE 是关键
+canvas.clipRect(clipBounds, Region.Op.REPLACE);
+</code></pre>
+<p>或者：</p>
+<pre><code>设置不裁减孩子大小
+viewgroup.setClipChildren(false);
+设置可以在padding上画图
+viewgroup.setClipPadding(false);
+</code></pre>
+<p>通过上面两种方式，就可以将view所在的区域变大。但是第二种方式是将所有的view根节点设置为不裁剪，就是全局画布大小，而且要设置所有view容器，所以方法不具有通用性，不使用。
+方案二指定了想要扩大的view大小。接着使用上面阴影的设置方法，发现没有任何的效果。后来不断测试，发现了<code>this.setLayerType(View.LAYER_TYPE_SOFTWARE, null);</code> 和 <code>改变画布大小</code>的这段代码冲突，如果设置了<code>View.LAYER_TYPE_SOFTWARE</code>就不能改变画布的大小。
+由此，只能另选方法了。</p>
+<h3 id="方案20">方案2.0</h3>
+<p>必须要将画布大小进行放大，所以更改画布大小的代码必不可少。所以丢弃了 <code>setShadowLayer</code> 的方法。自己来绘制阴影效果。
+由于阴影可能会出现在一个view的上下左右四个角，为了减少判断，就直接在view外面绘制一个圈，分解为9个矩形。这是因为阴影的四个角需要圆滑一些，所以不是正常的矩形，所以共计上下左右+四个角+中心共9个矩形。这样做的好处就是简化了一部分逻辑，但是增加了绘制成本。谁有更好的绘制思路，可以给我留言。</p>
+<p>首先在绘制前，设置阴影的大小，偏移量，生成对应的Gradient对象，上下左右用LinearGradient，四个角用RadialGradient。再根据view的大小来找到每个矩形的顶点坐标，生成对应的Rect。用来绘制图像。
+在onDraw中，通过循环渲染9个矩形。绘制完成后，把和原view重叠的部分直接剪切掉，就形成了一个带有阴影效果的view。裁减方式如下：</p>
+<pre><code>Path rectPath = new Path();
+Path viewPath = new Path();
+viewPath.addRect(0, 0, viewWidth, viewHeight, Path.Direction.CW);
+rectPath.addRect(left, top, right, bottom, Path.Direction.CW);
+rectPath.op(rectPath, viewPath, Path.Op.DIFFERENCE);
+canvas.drawPath(rectPath, mPaint);
+</code></pre>
+<p>通过这种方式，就可以直接裁减掉重叠的部分，关于Path的使用请google。</p>
+<p>通过如上的方式，就可以绘制一个阴影了。</p>
+<h2 id="结语">结语</h2>
+<p>目前还不够完善，希望大家多提宝贵意见。有问题，评论留言。邮箱：lybvinci@foxmail.com 。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/an-zhuo-v8-jing-tai-ku-diao-shi">
+              <h3 class="post-title">
+                # 安卓v8静态库调试
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

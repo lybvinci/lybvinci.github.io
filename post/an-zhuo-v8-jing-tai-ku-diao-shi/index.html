@@ -1,0 +1,237 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title># 安卓v8静态库调试 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              # 安卓v8静态库调试
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <p><code>本文所讲v8版本为3.17版本。了解此版本的同学，应该知道，这个版本被UC进行优化，在weex中进行了使用。</code></p>
+ <!-- more -->
+<h2 id="概述">概述</h2>
+<p>本文所讲的内容是：在chrome端远程调试安卓端用v8加载的js。</p>
+<p>如果要在安卓客户端进行js动态加载，通过js渲染界面，这就必须要通过v8进行解析，v8解析过js之后，就会将js的对象，包装成一个个的C++对象，可以通过v8提供的接口，在native端获取这些对象，从而对其进行使用。这种方式，基本上是所有动态化框架的基础。weex就是这种方式，reactnative（以下简称RN）也是这种方式，不过解析js使用的引擎不相同而已，RN使用的是iOS平台的javascriptcore。而weex在安卓上也是使用的v8。通过这种方式，js一次编写，就可以同时运行在web端，安卓端，iOS端。（iOS端在此不作介绍。）这种动态加载，可以应对业务变化很快的app，比如淘宝，页面需要经常变动，只是更改一下界面，业务逻辑，就要重新发布新版本，是一件很没有意思的事情。所以，这种基于v8的动态化框架，就成为了趋势。</p>
+<p>众所周知，在web端调试js很容易，而在安卓端通过webview调试js也很容易，而直接通过v8调试js，却很困难。首先，v8协议在不断的发生改变，而v8所使用的调试协议和chrome所使用的v8调试协议完全不一样。前面有一篇文章，记录了本文所介绍的3.17版本的v8调试协议，chrome的调试协议比较稳定，google一下，就可以找到。你可以进行对比，他们是完全不一样的。这就意味着，要进行调试，就必须要做协议转换。（<code>注意：谷歌自从5.6版本起，就自带了调试客户端，内部自己转换了协议，而且可以直接和chrome进行连接，只需要调用相关的方法就可以。可以参考v8 github上的wiki。如果使用的是5.6及以上版本，本文可以直接忽略不看。</code>）</p>
+<h2 id="安卓客户端工作">安卓客户端工作</h2>
+<h3 id="主要有以下三个重点">主要有以下三个重点</h3>
+<p>1、客户端首先需要注册一个handler。在v8-debug.h中有这样一个方法：</p>
+<pre><code>static void SetMessageHandler2(MessageHandler2 handler);
+//MessageHandler2的定义如下：
+typedef void (*MessageHandler2)(const Message&amp; message);
+</code></pre>
+<p>将自己的MessageHandler2set进去之后，就可以接收到来自v8的message类型数据。</p>
+<pre><code>//通过这种方式，可以得到json数据。
+message.GetJSON();
+</code></pre>
+<p>获得了消息之后，传递到服务端，进行协议转换。</p>
+<p>2、那么被服务端转换之后的chrome消息怎么处理呢？在v8-debug.h文件中，有如下一个方法：</p>
+<pre><code>// If no isolate is provided the default isolate is used.
+static void SendCommand(const uint16_t* command, int length,
+                      ClientData* client_data = NULL,
+                      Isolate* isolate = NULL);
+</code></pre>
+<p>通过这个方法，可以将转换之后的消息发送给v8进行处理，v8通过处理，就会将消息通过步骤1的方式传递结果。</p>
+<p>3、有一些情况下，发送到v8的调试信息可能没有返回，可以尝试下面的方法：</p>
+<pre><code>/**
+ * Makes V8 process all pending debug messages.
+ *
+ * From V8 point of view all debug messages come   asynchronously (e.g. from
+ * remote debugger) but they all must be handled synchronously: V8 cannot
+ * do 2 things at one time so normal script execution must be interrupted
+ * for a while.
+ *
+ * Generally when message arrives V8 may be in one of 3 states:
+ * 1. V8 is running script; V8 will automatically interrupt and process all
+ * pending messages (however auto_break flag should be enabled);
+ * 2. V8 is suspended on debug breakpoint; in this state V8 is dedicated
+ * to reading and processing debug messages;
+ * 3. V8 is not running at all or has called some long-working C++ function;
+ * by default it means that processing of all debug messages will be deferred
+ * until V8 gets control again; however, embedding application may improve
+ * this by manually calling this method.
+ *
+ * It makes sense to call this method whenever a new debug message arrived and
+ * V8 is not already running. Method v8::Debug::SetDebugMessageDispatchHandler
+ * should help with the former condition.
+ *
+ * Technically this method in many senses is equivalent to executing empty
+ * script:
+ * 1. It does nothing except for processing all pending debug messages.
+ * 2. It should be invoked with the same precautions and from the same context
+ * as V8 script would be invoked from, because:
+ *   a. with &quot;evaluate&quot; command it can do whatever normal script can do,
+ *   including all native calls;
+ *   b. no other thread should call V8 while this method is running
+ *   (v8::Locker may be used here).
+ *
+ * &quot;Evaluate&quot; debug command behavior currently is not specified in scope
+ * of this method.
+ */
+static void ProcessDebugMessages();
+</code></pre>
+<p>文档介绍很多，主要意思是如果命令是<code>Evaluate</code>，有些情况下v8是不会返回的，这时可以尝试调用此方法，催促v8返回。通常情况下，此方法可以不用调用。</p>
+<p>3、v8加载运行js很快，这就需要我们每次打开调试的时候，js都断点在第0行第0列等我们来运行。</p>
+<pre><code>// Schedule a debugger break to happen when JavaScript code is run
+// in the given isolate. If no isolate is provided the default
+// isolate is used.
+static void DebugBreak(Isolate* isolate = NULL);
+</code></pre>
+<p>在比较靠前的时候，调用此方法，就可以将v8暂停在0行0列，直到给出了下一步或者中断之后，才会继续加载js。</p>
+<h2 id="服务端工作">服务端工作</h2>
+<p>所有的消息都是通过socket或者websocket进行传输。推荐websocket，实现简单，双向通信。而且和chrome的调试连接必须使用websocket。接下来看看几个步骤：
+1、处理v8发送过来的消息
+v8发送过来的消息是一个json格式的数据，而chrome需要的也是一个json格式的数据。举两个例子，首先看看chrome的协议：</p>
+<pre><code>{
+    &quot;method&quot;: &quot;Console.messageAdded&quot;,
+    &quot;params&quot;: {
+        &quot;message&quot;: {
+        &quot;source&quot;: &quot;console-api&quot;,
+        &quot;level&quot;: &quot;log&quot;,
+        &quot;text&quot;: &quot;a=x&quot;,
+        &quot;type&quot;: &quot;log&quot;
+        }
+    }
+}
+</code></pre>
+<p>接下来看看v8的协议：</p>
+<pre><code>{
+    &quot;seq&quot;: 1,
+    &quot;type&quot;: &quot;request&quot;,
+    &quot;command&quot;: &quot;setexceptionbreak&quot;,
+    &quot;arguments&quot;: {
+        &quot;type&quot;: &quot;all&quot;,
+        &quot;enabled&quot;: false,
+        &quot;maxStringLength&quot;: -1
+     }
+}
+</code></pre>
+<p>可以看到，他们的协议格式是不相同的。在此，我们都知道nodejs，他也是基于v8进行开发的，想必他的调试也会进行协议转换，就这条线索，找到了node-inspector这个项目，发现其中确实对协议进行了转换。将其协议转换的部分，抽取出来，大部分都可以正常使用。需要更改的有几个要点：</p>
+<ul>
+<li>脚本获取方式需要进行修改。nodejs直接在桌面，可以通过路径获取文件，而安卓的是远程调试，所以方式不同。</li>
+<li>他的console输出是注入了一个库，而我们不能注入这个库，所以他的console输出模块也是不可用的。</li>
+</ul>
+<p><code>注意点：</code></p>
+<ul>
+<li>获取脚本，v8执行js时，会首先进行编译，然后运行，他会发送一个 <code>afterCompile</code> 事件，当服务端发送<code>getResourceTree</code>命令的时候，需要将这个消息一并返回过去，接下来就是正常的流程。</li>
+<li>console的log输出，由于v8中并没有console这样一个对象，需要将全局的console进行一个包装，映射为一个v8对象，设置到js的执行环境中，于是，js执行环境中就会拥有console.log,console.warn等属性，设置好之后，在对应的回调函数中，需要手动编写调试后的消息，可以直接变为chrome所需要的调试协议格式，不经转换，直接发送chrome端即可。获取到消息后，可以直接在控制台上输出。</li>
+</ul>
+<h2 id="chrome端">chrome端</h2>
+<p>chrome端使用的源码中的devtool文件，协议会发生改变，所以确保使用的协议是低于chrome55版本的，以上可能不支持。从这些低版本中抽取出devtool工程。当然，也可以自己修改，升级升上去。</p>
+<h2 id="连接起来">连接起来</h2>
+<p>以上所讲都是一个个单独的部分，如果需要使用，就需要将其连接起来。我的方案是通过websocket连接起来，起一个nodejs后台服务，处理这些websocket交互。建立对应的session，就会非常简单。</p>
+<h2 id="结束">结束</h2>
+<p>以上只是粗略讲了一下其中的一些重点部分，具体实践起来还是有大量的工作需要去做的。比如多v8的调试，session管理等等，都是比较复杂的。
+v8内核能量巨大，未来如何，拭目以待。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/v8-debugger-protocol">
+              <h3 class="post-title">
+                V8 Debugger Protocol
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

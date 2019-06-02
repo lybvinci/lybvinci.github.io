@@ -1,0 +1,148 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chromium-模型、线程介绍 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Chromium-模型、线程介绍
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="多进程模型">多进程模型</h2>
+<ul>
+<li>Browser 进程:浏览器的主进程,负责浏览器界面的显示，各个页面的管理,其他各种进程的管理;</li>
+<li>Render 进程:页面的渲染进程,负责页面的渲染工作,WebKit 的工作主要在这个进程中完成;</li>
+<li>NPAPI 插件进程:每种类型的插件只会有一个进程,每个插件进程可以被多个 Render 进程共享;</li>
+<li>GPU 进程:最多只有一个,当且仅当GPU硬件加速打开的时候才会被创建,主要用于对 3D 加速调用的实现;</li>
+<li>Pepper 插件进程:同 NPAPI 插件进程,不同的是为Pepper 插件而创建的进程</li>
+</ul>
+<!-- more -->
+<h2 id="沙箱模型">沙箱模型</h2>
+<p>在页面多进程中，页面的渲染是运行在沙箱模型中的Render进程中实现的，这些渲染引擎没有访问本地资源的能力，可以保护渲染引擎被入侵。</p>
+<h2 id="多线程机制">多线程机制</h2>
+<p>几个重要的线程：</p>
+<ol>
+<li>chrome线程：进程的主线程，browser进程重要 主要是负责UI，当然也是管家；Render进程中则是管家兼处理WebKit渲染的，gpu进程中则负责处理绘图请求并调用OpenGL进行绘制工作。</li>
+<li>Chrome_IOThread/Chrome_ChildIOThread线程:用来接收其他进程的IPC消息和派发资深消息到其他进程。</li>
+<li>SignalSender线程：v8 JavaScript引擎中用于处理Linux信号的线程。</li>
+</ol>
+<h2 id="消息循环">消息循环</h2>
+<p>chromium中需要处理三种类型的消息：chromium自定义任务，Socket，文件IO操作。</p>
+<ul>
+<li>MessageLoop 是主消息循环，由于有三种类型的消息，那么必然会有三种消息循环来处理这三种不同类型的消息：一种是处理自定义任务，一种是处理自定义任务和IO操作，一种是处理自定义任务和UI消息。由于只有自定义任务和平台无关，而其他两种都需要和平台相关联，就出现了一个MessagePump类。MessagePump的每个子类针对不同平台和不同的消息类型，事实上，消息处理的主循环也在MessagePump中，MessageLoop 通过实现MessagePumpDelegate接口来处理自定义任务。</li>
+<li>对于所有平台，History线程所使用的类都是一样的。而UI线程和IO线程分别对应不同的MessagePump的。</li>
+<li>Android平台的处理不同，原因在于主循环在java层，用户界面的事件派发机制都在java层来处理，因而需要在Android的消息循环机制中加入对自定义任务的处理。</li>
+</ul>
+<h2 id="如何等待自定义任务">如何等待自定义任务</h2>
+<p>假设现在MessageLoop没有任务和消息需要处理，就需要等待自定义任务到来。不能盲目等待。chromium非常巧妙，他在MessagePumpLibEvent为例：在Linux上创建一个管道，等待读取这个管道的内容，当有新的自定义任务到来的时候，就写入一个字节到管道中，从而MessageLoop被唤醒，简单直接。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/google-v8-bian-yi-guo-cheng-ji-lu">
+              <h3 class="post-title">
+                Google-V8编译过程记录
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

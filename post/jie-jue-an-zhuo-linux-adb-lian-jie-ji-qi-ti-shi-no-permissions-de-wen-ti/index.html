@@ -1,0 +1,275 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>解决安卓-linux-adb-连接机器提示no-permissions的问题 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              解决安卓-linux-adb-连接机器提示no-permissions的问题
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="问题描述">问题描述</h2>
+<pre><code class="language-shell">adb devices
+no permission (user xxx is not in the plugdev group); see [http://developer.android.com/tools/device.html]
+</code></pre>
+<!-- more --> 
+<h2 id="解决方案">解决方案</h2>
+<ol>
+<li>
+<p>使用下列方式启动 adb</p>
+<pre><code>adb kill-server
+cd the-path-your-sdk-adb
+sudo ./adb kill-server
+sudo ./adb kill-server
+</code></pre>
+<p>此方法使用 sudo 命令启动 adb。可以解决没有权限的问题。不过需要先关掉用户的adb，sudo用户的adb，然后再进行重启。Android studio 通常都不是通过sudo启动，所以他启动的时候都会自己启动adb，导致频繁出现没有权限的问题。</p>
+</li>
+<li>
+<p>一劳永逸的方案</p>
+<pre><code class="language-shell">cd /etc/udev/rules.d/
+sudo vim 51-android.rules
+输入如下内容：
+# udev rule to detect android devices
+# These rules refer to http://developer.android.com/tools/device.html
+# Acer
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0502&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Archos
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0e79&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Asus
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0b05&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Azpen Onda
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1f3a&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# BQ
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2a47&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Dell
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;413c&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Fairphone
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2ae5&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Foxconn
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0489&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Fujitsu Toshiba 	
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;04c5&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Garmin-Asus
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;091e&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Genesys
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;d324&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Google
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;18d1&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Haier
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;201e&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Hisense
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;109b&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# HTC, Wiko
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0bb4&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Huawei
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;12d1&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Intel
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;8087&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# K-Touch
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;24e3&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# KT Tech
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2116&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Kyocera
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0482&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Lab126
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1949&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Lenovo
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;17ef&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# LG
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1004&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Mad Catz
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0738&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Meizu
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2a45&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Micromax
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1ebf&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Motorola
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;22b8&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# MTK
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0e8d&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# NEC
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0409&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Nokia
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0421&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Nook
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2080&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Nvidia
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0955&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# OnePlus Two (unknown vendor's name)
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2a70&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Oppo
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;22d9&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# OTGV
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2257&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Pantech
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;10a9&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Pegatron
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1d4d&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Philips
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0471&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# PMC-Sierra
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;04da&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Qualcomm
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;05c6&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Rockcwell Electronics
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2207&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# SK Telesys
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1f53&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Samsung
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;04e8&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Sharp
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;04dd&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Sony
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;054c&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Sony Ericsson
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0fce&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Spreadtrum
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1782&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# T &amp; A Mobile Phones
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1bbb&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Teleepoch
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2340&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Texas Instruments UsbBoot
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0451&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Toshiba
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0930&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Wearners
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;05c6&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Wileyfox
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2970&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# XiaoMi
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2717&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# YU
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;1ebf&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# Zebra
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;05e0&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0451&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# ZTE
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;19d2&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+# ZUK
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2b4c&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+
+保存退出。
+sudo chmod a+r 51-android.rules  #将此目录下面的所有rules文件加上权限
+sudo service udev restart
+adb kill-server
+adb devices
+</code></pre>
+<p>此后你的 adb 就不需要通过root进行启动啦！</p>
+</li>
+</ol>
+<h2 id="归因">归因</h2>
+<p>由于linux的权限管理，需要将手机的设备加入到开发分组当中，然而手机型号很多，一个个去查不太现实，使用文中的配置可以满足大多数需求。</p>
+<h2 id="参考">参考</h2>
+<p>[链接</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/dong-tai-jia-zai-de-yi-xie-keng">
+              <h3 class="post-title">
+                动态加载的一些坑
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

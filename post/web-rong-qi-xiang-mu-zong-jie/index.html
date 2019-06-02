@@ -1,0 +1,152 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Web容器项目总结 | Lybvinci&#39;s blob</title>
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474284043">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://lybvinci.github.io">
+  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474284043" alt="">
+  </a>
+  <h1 class="site-title">
+    Lybvinci&#39;s blob
+  </h1>
+  <p class="site-description">
+    化繁为简
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://lybvinci.github.io" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Web容器项目总结
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2019-06-02 ·
+              </time>
+              
+                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
+                  # 开发
+                </a>
+              
+            </div>
+            
+            <div class="post-content">
+              <h2 id="背景">背景</h2>
+<p>蘑菇街是一个专门为女性购物打造的时尚购物平台，App端承接了大量的流量，及时发布新内容成为一个挑战。在保证平台稳定性和迅速更新的前提下，我们选择了native和h5的混合开发，并对其不断的进行了优化迭代。</p>
+ <!-- more -->
+<h2 id="方案">方案</h2>
+<h3 id="内核选择">内核选择</h3>
+<ul>
+<li>由于安卓碎片化严重，webview 性能不一，初期我们选择编译打包 crosswalk 项目提供的容器内核进行动态加载，在 app 空闲的时候，下载此内核，并在下载完成后，动态加载到系统中。在 web 容器启动的时候判断相应的版本号以及文件完整性，选择性的加载两种内核。数据表明，在安卓4.4及以下机型上，crosswalk 的性能有很大的优势。</li>
+<li>在这个环节，比较重要的是要提高内核下载的到达率，解决用户网络连接断开，或者应用被杀死，进程中断，文件完整性的问题。我们做了大量工作，通过判断网络情况，文件下载结果的验证，防止出现下载死循环，导致用户手机内存爆炸的问题。最终到达率在95%以上。</li>
+</ul>
+<h3 id="能力扩展">能力扩展</h3>
+<ul>
+<li>web 天生就有动态的特性，但在 native 端也有其不足的地方。就是他的权限不足，无法访问 native 的一些系统功能，比如添加日历，访问通讯录等。这些在电商应用中都是常见的需求。由于这个问题，我们提供了统一的内核访问 api ，然后接入 Cordova 。Cordova是一个能让 JavaScript 访问原生设备功能，如摄像头、麦克风等的库。</li>
+<li>Cordova原理探究：通过继承<code>WebChromeClient</code>类，复写 <code>onJsPrompt</code> 方法,在其中通过<code>CordovaBridge</code>类，桥接到自己的功能点，通过自己定义好的协议，实现对应的功能。Cordova的一个强大的地方，就是他有插件机制，业务方可以很容易的扩展插件，js调用native回非常方便，只要继承一下<code>CordovaPlugin</code>类，在<code>execute</code>方法中执行自己的逻辑即可。</li>
+<li>结合难点
+<ul>
+<li>由于我们封装了自己的内核，而且是采用自己定制的一套接口，就不能直接使用Cordova官方仓库提供的已经封装好的 <code>SystemWebview</code> 类，所以需要深入了解他的一些逻辑，才能进行调用，否则会遇到深坑。</li>
+<li>调试需要结合js一起进行，在前端有一个 deviceready 事件会传递到native端，如果调用时机错误，Cordova 就会加载失败，从而导致传递给桥接类的秘钥错误，调用直接失败。</li>
+<li>我们自己的内核封装不完善，有一些方法实现不一致，有些方法没有。此时需要去看源码类似的地方，进行调用尝试。</li>
+</ul>
+</li>
+</ul>
+<h3 id="数据分析">数据分析</h3>
+<p>既然使用了多种内核，就要对不同的内核进行数据分析。在客户端进行对应的性能打点，在数据平台上通过 sql 语句进行数据清洗，并每天定时生成。利用 Reactjs 开发了数据展示的前端界面，每天可以查看昨日的内核分布，机型占比，性能对比等数据，为内核的性能保证提供数据支撑。</p>
+<h2 id="问题">问题</h2>
+<ul>
+<li>兼容性问题。经常会有前端同学来问在某些机型上面是好的，在另外一个机器上就不行。此类问题通常是因为各个设备不兼容导致的，各大应用厂商都会对系统进行一些定制，导致问题百出。由于各个版本的 webview 存在兼容性问题，后来我们又接入了腾讯的 x5 内核。</li>
+<li>安卓系统不断的更新演进，旧的内核越来越少，webview 性能都显著提高，我们自己的内核面临下架的问题。最终在2016年12月，将 crosswalk 的内核下载停掉。</li>
+<li>crosswalk 另一个问题是存在硬件加速问题，他使用的是 surfaceview ，在低端机型上，很容易内存不够，被系统杀掉。</li>
+</ul>
+<h2 id="总结">总结</h2>
+<p>整个项目包含的内容不只文字所能术完，在此期间，同事们和我都做了很多努力，在保证功能的前提下，不断的做优化，提升性能，最终将蘑菇街的页面加载速度提升到秒级。</p>
+
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://lybvinci.github.io/post/xcore-kai-fa-ti-yan">
+              <h3 class="post-title">
+                XCore开发体验
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
