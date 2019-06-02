@@ -1,94 +1,90 @@
+
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="description" content="" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+<meta charset="utf-8" >
+
 <title>2016年度总结 | Lybvinci&#39;s blob</title>
-<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474339263">
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474493526">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://lybvinci.github.io">
-  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474339263" alt="">
-  </a>
-  <h1 class="site-title">
-    Lybvinci&#39;s blob
-  </h1>
-  <p class="site-description">
-    化繁为简
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="https://lybvinci.github.io" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
-  </div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://lybvinci.github.io">
+        <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474493526" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://lybvinci.github.io">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
   </div>
 </div>
 
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="https://lybvinci.github.io" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
 
+
+      <div class="content-container">
         <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              2016年度总结
-            </h2>
-            <div class="post-info">
-              <time class="post-time">
-                · 2019-06-02 ·
-              </time>
-              
-                <a href="https://lybvinci.github.io/tag/live" class="post-tag">
-                  # live
-                </a>
-              
-            </div>
+          
+          <h2 class="post-title">2016年度总结</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2019-06-02</span>
             
-            <div class="post-content">
-              <h1 id="2016年度总结">2016年度总结</h1>
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://lybvinci.github.io/tag/live">
+                    live
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content">
+            <h1 id="2016年度总结">2016年度总结</h1>
 <h2 id="一-新坏境的适应">一、新坏境的适应</h2>
 <p>从学校步入了社会，人生中的一个新的节点在蘑菇街展开。社会中的角色也由之前的实习生终于变成了正式员工。新的省份浙江，新的城市杭州，新的环境蘑菇街，可以说，这个角色转换很大。在学校，可以有人督促你，监督你，而来到了社会里，就意味着不能再任性随意。但是对于研发来说，角色的转换没有特别的明显，这就是我很喜欢开发这份工作的原因。蘑菇街的氛围很好，让我最终留在了这里。在这里认识了很多nice的学长，很多要好的朋友，新的环境，并没有让我长期的水土不服。感谢蘑菇街的同事，让我在陌生的城市中，并没有感到孤独。</p>
  <!-- more --> 
@@ -103,33 +99,57 @@
 <p>这一年，自己在编程方面有了一点点进步，得益于参与了很多事情的开发。通过这些事情，也提升了自己的沟通能力。但是代码能力还有待提高，希望新的一年可以学习更多的知识，提升自己，让自己为公司贡献更多的力量。在小半年的时间，自己仅仅做过一次总结，这方面还是不足的。如果一直前行，而忘记记录沿途的风景，那么到达目的地也只剩下完成任务的空虚。学长的总结的建议，我觉得很好，最近已经开始有重大的任务完成时总结一下的习惯了，感觉很好，希望自己可以坚持下去。</p>
 <p>2017加油！</p>
 
-            </div>
-          </article>
+          </div>
         </div>
 
         
           <div class="next-post">
-            <div class="next">下一篇</div>
-            <a href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
+            <a class="purple-link" href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
               <h3 class="post-title">
-                3.17.12版本v8调试协议
+                下一篇：3.17.12版本v8调试协议
               </h3>
             </a>
           </div>
-        
+          
+      </div>
 
-        
+      
 
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+      <div class="site-footer">
+  <div class="slogan">化繁为简</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
 </div>
 
-<script>
-  hljs.initHighlightingOnLoad()
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>

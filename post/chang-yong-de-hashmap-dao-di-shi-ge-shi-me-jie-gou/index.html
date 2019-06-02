@@ -1,94 +1,90 @@
+
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="description" content="" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+<meta charset="utf-8" >
+
 <title>常用的HashMap到底是个什么结构 | Lybvinci&#39;s blob</title>
-<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474339263">
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474493526">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://lybvinci.github.io">
-  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474339263" alt="">
-  </a>
-  <h1 class="site-title">
-    Lybvinci&#39;s blob
-  </h1>
-  <p class="site-description">
-    化繁为简
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="https://lybvinci.github.io" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
-  </div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://lybvinci.github.io">
+        <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474493526" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://lybvinci.github.io">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
   </div>
 </div>
 
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="https://lybvinci.github.io" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
 
+
+      <div class="content-container">
         <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              常用的HashMap到底是个什么结构
-            </h2>
-            <div class="post-info">
-              <time class="post-time">
-                · 2019-06-02 ·
-              </time>
-              
-                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-                  # 开发
-                </a>
-              
-            </div>
+          
+          <h2 class="post-title">常用的HashMap到底是个什么结构</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2019-06-02</span>
             
-            <div class="post-content">
-              <h2 id="0x00-前言">0x00 前言</h2>
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://lybvinci.github.io/tag/_dev">
+                    开发
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content">
+            <h2 id="0x00-前言">0x00 前言</h2>
 <p>HashMap 是最常用的容器之一，应该没什么疑问了。可你到底了解他吗？网上已经有很多文章来总结 HashMap 了，我来写这篇，主要是为了记录自己阅读之后的一点点小感悟，如若有错误的地方，请大家指正。下文分析基于 <code>jdk1.8</code> 。</p>
 <!-- more -->
 <h2 id="0x01-一句话介绍">0x01 一句话介绍</h2>
@@ -401,33 +397,57 @@ n-1        0011    0111
 <h2 id="0x05-喝口水来个总结">0x05 喝口水，来个总结</h2>
 <p>本文讲解了 HashMap 中的一部分核心问题，没有全部都讲下来。还有resize线程安全问题，红黑树相关的部分没有讲解。线程安全这个，后面也会单独来一篇进行讲解。红黑树则放到 TreeMap 的分析当中。如果文中有误，请大家指出，感激不尽。</p>
 
-            </div>
-          </article>
+          </div>
         </div>
 
         
           <div class="next-post">
-            <div class="next">下一篇</div>
-            <a href="https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo">
+            <a class="purple-link" href="https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo">
               <h3 class="post-title">
-                日志SLF4J解惑
+                下一篇：日志SLF4J解惑
               </h3>
             </a>
           </div>
-        
+          
+      </div>
 
-        
+      
 
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+      <div class="site-footer">
+  <div class="slogan">化繁为简</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
 </div>
 
-<script>
-  hljs.initHighlightingOnLoad()
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>

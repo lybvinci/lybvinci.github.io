@@ -1,60 +1,116 @@
+
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="description" content="" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+<meta charset="utf-8" >
+
 <title>intellij创建springboot项目 | Lybvinci&#39;s blob</title>
-<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474339263">
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474493526">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://lybvinci.github.io">
-  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474339263" alt="">
-  </a>
-  <h1 class="site-title">
-    Lybvinci&#39;s blob
-  </h1>
-  <p class="site-description">
-    化繁为简
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="https://lybvinci.github.io" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://lybvinci.github.io">
+        <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474493526" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://lybvinci.github.io">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
   </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="https://lybvinci.github.io" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">intellij创建springboot项目</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2019-06-02</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://lybvinci.github.io/tag/_dev">
+                    开发
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content">
+            <h2 id="如何利用intelij创建springboot项目">如何利用intelij创建springboot项目</h2>
+<p>选择file - new - project</p>
+<!-- more -->
+<p><img src="http://upload-images.jianshu.io/upload_images/1835691-35ce96ebf3b4c5f6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png">
+点击下一步。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/1835691-60935bc2266b3f55.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png">
+设置完包名，接下来就是按照自己的需要，一路下一步就ok了。</p>
+<h2 id="so-就是这么简单-可能一开始找不到选择哪个的比较多再次记录一下">so 就是这么简单。可能一开始找不到选择哪个的比较多，再次记录一下。</h2>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-1">
+              <h3 class="post-title">
+                下一篇：nodejs 启动流程分析（1）
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">化繁为简</div>
   <div class="social-container">
     
       
@@ -68,62 +124,26 @@
       
     
   </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
 </div>
 
 
-        <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              intellij创建springboot项目
-            </h2>
-            <div class="post-info">
-              <time class="post-time">
-                · 2019-06-02 ·
-              </time>
-              
-                <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-                  # 开发
-                </a>
-              
-            </div>
-            
-            <div class="post-content">
-              <h2 id="如何利用intelij创建springboot项目">如何利用intelij创建springboot项目</h2>
-<p>选择file - new - project</p>
-<!-- more -->
-<p><img src="http://upload-images.jianshu.io/upload_images/1835691-35ce96ebf3b4c5f6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png">
-点击下一步。</p>
-<p><img src="http://upload-images.jianshu.io/upload_images/1835691-60935bc2266b3f55.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png">
-设置完包名，接下来就是按照自己的需要，一路下一步就ok了。</p>
-<h2 id="so-就是这么简单-可能一开始找不到选择哪个的比较多再次记录一下">so 就是这么简单。可能一开始找不到选择哪个的比较多，再次记录一下。</h2>
+    </div>
+    <script type="application/javascript">
 
-            </div>
-          </article>
-        </div>
+hljs.initHighlightingOnLoad()
 
-        
-          <div class="next-post">
-            <div class="next">下一篇</div>
-            <a href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-1">
-              <h3 class="post-title">
-                nodejs 启动流程分析（1）
-              </h3>
-            </a>
-          </div>
-        
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
 
-        
-
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
-</div>
-
-<script>
-  hljs.initHighlightingOnLoad()
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>

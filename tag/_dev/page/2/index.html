@@ -1,60 +1,266 @@
+
+<!DOCTYPE html>
 <html>
   <head>
-  <meta charset="utf-8" />
-<meta name="description" content="" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+<meta charset="utf-8" >
+
 <title>开发 | Lybvinci&#39;s blob</title>
-<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474339263">
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474493526">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://lybvinci.github.io">
-  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474339263" alt="">
-  </a>
-  <h1 class="site-title">
-    Lybvinci&#39;s blob
-  </h1>
-  <p class="site-description">
-    化繁为简
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="https://lybvinci.github.io" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://lybvinci.github.io">
+        <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474493526" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://lybvinci.github.io">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
   </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="https://lybvinci.github.io" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+
+        <div class="current-tag-container">
+          <h2 class="title">
+            <i class="icon icon-pricetags-outline"></i> 开发
+          </h2> 
+        </div>
+
+        
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/an-zhuo-v8-jing-tai-ku-diao-shi">
+        <h2 class="post-title"># 安卓v8静态库调试</h2>
+      </a>
+      <div class="post-abstract">
+        <p><code>本文所讲v8版本为3.17版本。了解此版本的同学，应该知道，这个版本被UC进行优化，在weex中进行了使用。</code></p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/jie-jue-an-zhuo-linux-adb-lian-jie-ji-qi-ti-shi-no-permissions-de-wen-ti">
+        <h2 class="post-title">解决安卓-linux-adb-连接机器提示no-permissions的问题</h2>
+      </a>
+      <div class="post-abstract">
+        <h2 id="问题描述">问题描述</h2>
+<pre><code class="language-shell">adb devices
+no permission (user xxx is not in the plugdev group); see [http://developer.android.com/tools/device.html]
+</code></pre>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/dong-tai-jia-zai-de-yi-xie-keng">
+        <h2 class="post-title">动态加载的一些坑</h2>
+      </a>
+      <div class="post-abstract">
+        <h1 id="背景">背景</h1>
+<p>前一段时间，做了一个需求，需要动态加载一个so，还有一个classes.dex，还有一些资源。看上去是一个还行的需求，原理就是通过 classloader 进行动态加载，知易行难，真正做起来，还是遇到了下面的这些坑。</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/chromium-mo-xing-xian-cheng-jie-shao">
+        <h2 class="post-title">Chromium-模型、线程介绍</h2>
+      </a>
+      <div class="post-abstract">
+        <h2 id="多进程模型">多进程模型</h2>
+<ul>
+<li>Browser 进程:浏览器的主进程,负责浏览器界面的显示，各个页面的管理,其他各种进程的管理;</li>
+<li>Render 进程:页面的渲染进程,负责页面的渲染工作,WebKit 的工作主要在这个进程中完成;</li>
+<li>NPAPI 插件进程:每种类型的插件只会有一个进程,每个插件进程可以被多个 Render 进程共享;</li>
+<li>GPU 进程:最多只有一个,当且仅当GPU硬件加速打开的时候才会被创建,主要用于对 3D 加速调用的实现;</li>
+<li>Pepper 插件进程:同 NPAPI 插件进程,不同的是为Pepper 插件而创建的进程</li>
+</ul>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/google-v8-bian-yi-guo-cheng-ji-lu">
+        <h2 class="post-title">Google-V8编译过程记录</h2>
+      </a>
+      <div class="post-abstract">
+        <h2 id="0x00-前言">0x00 前言</h2>
+<p>由于要使用v8引擎，所以要编译V8。而且我要编译的是V8的安卓版本。更奇怪的是我编译的是NativeScript/android-v8的一个支持。最后要生成一个.a文件。</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
+        <h2 class="post-title">3.17.12版本v8调试协议</h2>
+      </a>
+      <div class="post-abstract">
+        <p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-05-01</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+
+<div class="pagination-container">
+  
+    <a href="https://lybvinci.github.io/tag/_dev/" class="prev"><i class="icon-arrow-ios-back-outline"></i> 上一页</a>
+  
+  
+</div>
+
+
+      </div>
+
+      <div class="site-footer">
+  <div class="slogan">化繁为简</div>
   <div class="social-container">
     
       
@@ -68,172 +274,26 @@
       
     
   </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
 </div>
 
-        <div class="current-tag-container">
-            <h2 class="title">
-                标签：#开发
-            </h2> 
-        </div>
-        <div class="post-container">
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/an-zhuo-v8-jing-tai-ku-diao-shi">
-        <h2 class="post-title"># 安卓v8静态库调试</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <p><code>本文所讲v8版本为3.17版本。了解此版本的同学，应该知道，这个版本被UC进行优化，在weex中进行了使用。</code></p>
 
-      </di>
-    </article>
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/jie-jue-an-zhuo-linux-adb-lian-jie-ji-qi-ti-shi-no-permissions-de-wen-ti">
-        <h2 class="post-title">解决安卓-linux-adb-连接机器提示no-permissions的问题</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <h2 id="问题描述">问题描述</h2>
-<pre><code class="language-shell">adb devices
-no permission (user xxx is not in the plugdev group); see [http://developer.android.com/tools/device.html]
-</code></pre>
+    </div>
+    <script type="application/javascript">
 
-      </di>
-    </article>
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/dong-tai-jia-zai-de-yi-xie-keng">
-        <h2 class="post-title">动态加载的一些坑</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <h1 id="背景">背景</h1>
-<p>前一段时间，做了一个需求，需要动态加载一个so，还有一个classes.dex，还有一些资源。看上去是一个还行的需求，原理就是通过 classloader 进行动态加载，知易行难，真正做起来，还是遇到了下面的这些坑。</p>
+hljs.initHighlightingOnLoad()
 
-      </di>
-    </article>
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/chromium-mo-xing-xian-cheng-jie-shao">
-        <h2 class="post-title">Chromium-模型、线程介绍</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <h2 id="多进程模型">多进程模型</h2>
-<ul>
-<li>Browser 进程:浏览器的主进程,负责浏览器界面的显示，各个页面的管理,其他各种进程的管理;</li>
-<li>Render 进程:页面的渲染进程,负责页面的渲染工作,WebKit 的工作主要在这个进程中完成;</li>
-<li>NPAPI 插件进程:每种类型的插件只会有一个进程,每个插件进程可以被多个 Render 进程共享;</li>
-<li>GPU 进程:最多只有一个,当且仅当GPU硬件加速打开的时候才会被创建,主要用于对 3D 加速调用的实现;</li>
-<li>Pepper 插件进程:同 NPAPI 插件进程,不同的是为Pepper 插件而创建的进程</li>
-</ul>
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
 
-      </di>
-    </article>
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/google-v8-bian-yi-guo-cheng-ji-lu">
-        <h2 class="post-title">Google-V8编译过程记录</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <h2 id="0x00-前言">0x00 前言</h2>
-<p>由于要使用v8引擎，所以要编译V8。而且我要编译的是V8的安卓版本。更奇怪的是我编译的是NativeScript/android-v8的一个支持。最后要生成一个.a文件。</p>
-
-      </di>
-    </article>
-  
-    <article class="post">
-      <a href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
-        <h2 class="post-title">3.17.12版本v8调试协议</h2>
-      </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-05-01 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
-      <div class="post-abstract">
-        <p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
-
-      </di>
-    </article>
-  
-</div>
-
-        <div class="pagination-container">
-  
-    <a href="https://lybvinci.github.io/tag/_dev/" class="prev-page">上一页</a>
-  
-  
-</div>
-
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
-</div>
-
-<script>
-  hljs.initHighlightingOnLoad()
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>

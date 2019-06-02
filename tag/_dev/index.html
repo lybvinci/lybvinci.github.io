@@ -1,273 +1,308 @@
+
+<!DOCTYPE html>
 <html>
   <head>
-  <meta charset="utf-8" />
-<meta name="description" content="" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+<meta charset="utf-8" >
+
 <title>开发 | Lybvinci&#39;s blob</title>
-<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474339263">
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1559474493526">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://lybvinci.github.io">
-  <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474339263" alt="">
-  </a>
-  <h1 class="site-title">
-    Lybvinci&#39;s blob
-  </h1>
-  <p class="site-description">
-    化繁为简
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="https://lybvinci.github.io" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
-  </div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://lybvinci.github.io">
+        <img class="avatar" src="https://lybvinci.github.io/images/avatar.png?v=1559474493526" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://lybvinci.github.io">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
   </div>
 </div>
 
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="https://lybvinci.github.io" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+
         <div class="current-tag-container">
-            <h2 class="title">
-                标签：#开发
-            </h2> 
+          <h2 class="title">
+            <i class="icon icon-pricetags-outline"></i> 开发
+          </h2> 
         </div>
-        <div class="post-container">
-  
-    <article class="post">
+
+        
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/arraylist-qian-xi">
         <h2 class="post-title">ArrayList浅析</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="0x00-前言">0x00 前言</h2>
 <p>大家好，我是 ArrayList， 应该是大家都耳熟能详的容器之一了。学习一下内中原理，还是很有必要的。至于为什么叫浅析呢，因为本文不会分析 Arrays 的相关方法。为什么不分析 Arrays 的相关方法，就是浅析了呢？那就接着往下看~（本文分析源码基于<code>jdk1.8</code>。本文基于第一人称描述，我 == ArrayList。）</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/chang-yong-de-hashmap-dao-di-shi-ge-shi-me-jie-gou">
         <h2 class="post-title">常用的HashMap到底是个什么结构</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="0x00-前言">0x00 前言</h2>
 <p>HashMap 是最常用的容器之一，应该没什么疑问了。可你到底了解他吗？网上已经有很多文章来总结 HashMap 了，我来写这篇，主要是为了记录自己阅读之后的一点点小感悟，如若有错误的地方，请大家指正。下文分析基于 <code>jdk1.8</code> 。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/ri-zhi-slf4j-jie-huo">
         <h2 class="post-title">日志SLF4J解惑</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="0x00-前言">0x00 前言</h2>
 <p>作为后端开发，日志可能是我们最常用的功能之一了。平时大家也可能经常遇见日志冲突，常见的overflow报错，今天为大家详解一下，这其中的原理以及问题所在。本文涉及 jar 包有：log4j,log4j-over-slf4j,slf4j-api,slf4j-log4j12 等等。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/intellij-chuang-jian-springboot-xiang-mu">
         <h2 class="post-title">intellij创建springboot项目</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="如何利用intelij创建springboot项目">如何利用intelij创建springboot项目</h2>
 <p>选择file - new - project</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-1">
         <h2 class="post-title">nodejs 启动流程分析（1）</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="前言">前言</h2>
 <p>之前用过一段时间的<code>v8</code> ，也只是会初始化那个流程，最近想深入了解一下，所以想要通过学习 <code>nodejs</code> 来加深理解。这篇文章主要是讲讲 <code>nodejs</code> 的初始化流程，如有错误，烦请指教~。（本文分析基于 v10.9.0，本文会尽量避免大段源码，但是为了有理有据，还是会放上一些精简过并带有注释的代码上来）。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/nodejs-qi-dong-liu-cheng-fen-xi-2">
         <h2 class="post-title">nodejs 启动流程分析（2）</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="前言">前言</h2>
 <p>上篇 <a href="https://www.jianshu.com/p/c02fec0defcf">nodejs 启动流程分析</a>中，遗留了几个问题。这一篇，主要讲讲模块加载流程。大家都应该熟悉 timer 模块的相关功能。我们就以 timer 为引子，一步步看下去吧。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/web-rong-qi-xiang-mu-zong-jie">
         <h2 class="post-title">Web容器项目总结</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="背景">背景</h2>
 <p>蘑菇街是一个专门为女性购物打造的时尚购物平台，App端承接了大量的流量，及时发布新内容成为一个挑战。在保证平台稳定性和迅速更新的前提下，我们选择了native和h5的混合开发，并对其不断的进行了优化迭代。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/xcore-kai-fa-ti-yan">
         <h2 class="post-title">XCore开发体验</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="背景">背景</h2>
 <p>XCore 是一个动态跨平台框架。类似 RN，Weex。一次编写，多端运行是我们的目标。</p>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/guo-nei-an-zhuo-liu-lan-qi-diao-yan">
         <h2 class="post-title">国内安卓浏览器调研</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="0x00-现状">0x00 现状</h2>
 <p>先取几个排名吧：）（全部搜索关键字浏览器）</p>
@@ -285,24 +320,30 @@
 <li>百度浏览器 （1.7亿次）</li>
 </ol>
 
-      </di>
-    </article>
-  
-    <article class="post">
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
       <a href="https://lybvinci.github.io/post/ru-he-hui-zhi-yin-ying-box-shadow-xiao-guo">
         <h2 class="post-title">如何绘制阴影box-shadow效果</h2>
       </a>
-      <div class="post-info">
-        <time class="post-time">
-          · 2019-06-02 ·
-        </time>
-        
-          <a href="https://lybvinci.github.io/tag/_dev" class="post-tag">
-            # 开发
-          </a>
-        
-      </div>
-      
       <div class="post-abstract">
         <h2 id="网上搜索到的做法">网上搜索到的做法</h2>
 <ul>
@@ -311,28 +352,71 @@
 <li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
 </ul>
 
-      </di>
-    </article>
-  
-</div>
-
-        <div class="pagination-container">
-  
-  
-    <a href="https://lybvinci.github.io/tag/_dev//page/2/" class="prev-page">下一页</a>
-  
-</div>
-
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
-</div>
-
-<script>
-  hljs.initHighlightingOnLoad()
-</script>
-
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2019-06-02</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="https://lybvinci.github.io/tag/_dev">
+                开发
+                
+              </a>
+            
+          </span>
+        
       </div>
     </div>
+    
+  </section>
+
+
+<div class="pagination-container">
+  
+  
+    <a href="https://lybvinci.github.io/tag/_dev//page/2/" class="next">下一页 <i class="icon-arrow-ios-forward-outline"></i></a>
+  
+</div>
+
+
+      </div>
+
+      <div class="site-footer">
+  <div class="slogan">化繁为简</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
   </body>
 </html>
