@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lybvinci.github.io</id>
     <title>Lybvinci&apos;s blob</title>
-    <updated>2019-06-02T11:18:29.286Z</updated>
+    <updated>2019-06-02T11:19:02.930Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lybvinci.github.io"/>
     <link rel="self" href="https://lybvinci.github.io/atom.xml"/>
@@ -10,17 +10,6 @@
     <logo>https://lybvinci.github.io/images/avatar.png</logo>
     <icon>https://lybvinci.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, Lybvinci&apos;s blob</rights>
-    <entry>
-        <title type="html"><![CDATA[3.17.12版本v8调试协议]]></title>
-        <id>https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi</id>
-        <link href="https://lybvinci.github.io/post/31712-ban-ben-v8-diao-shi-xie-yi">
-        </link>
-        <updated>2019-06-02T11:10:57.000Z</updated>
-        <summary type="html"><![CDATA[<p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
-]]></summary>
-        <content type="html"><![CDATA[<p><strong>The message based API is no longer maintained. Please ask in v8-users@googlegroups.com if you want to attach a debugger to the run-time.</strong></p>
-]]></content>
-    </entry>
     <entry>
         <title type="html"><![CDATA[ArrayList浅析]]></title>
         <id>https://lybvinci.github.io/post/arraylist-qian-xi</id>
@@ -162,6 +151,27 @@
 <li>e浏览器 （226万次）</li>
 <li>百度浏览器 （1.7亿次）</li>
 </ol>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[如何绘制阴影box-shadow效果]]></title>
+        <id>https://lybvinci.github.io/post/ru-he-hui-zhi-yin-ying-box-shadow-xiao-guo</id>
+        <link href="https://lybvinci.github.io/post/ru-he-hui-zhi-yin-ying-box-shadow-xiao-guo">
+        </link>
+        <updated>2019-06-02T11:05:36.000Z</updated>
+        <summary type="html"><![CDATA[<h2 id="网上搜索到的做法">网上搜索到的做法</h2>
+<ul>
+<li>加一个背景，android:background=&quot;@android:drawable/dialog_holo_light_frame 这个安卓自带的图片，设置为背景，就带有阴影效果。</li>
+<li>通过使用5.0以上的方法，<code>View.setElevation()</code> 方法，可以绘制阴影效果。</li>
+<li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
+</ul>
+]]></summary>
+        <content type="html"><![CDATA[<h2 id="网上搜索到的做法">网上搜索到的做法</h2>
+<ul>
+<li>加一个背景，android:background=&quot;@android:drawable/dialog_holo_light_frame 这个安卓自带的图片，设置为背景，就带有阴影效果。</li>
+<li>通过使用5.0以上的方法，<code>View.setElevation()</code> 方法，可以绘制阴影效果。</li>
+<li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
+</ul>
 ]]></content>
     </entry>
 </feed>
