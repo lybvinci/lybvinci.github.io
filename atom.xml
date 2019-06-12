@@ -2,11 +2,11 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lybvinci.github.io</id>
     <title>Lybvinci&apos;s blob</title>
-    <updated>2019-06-12T13:13:50.734Z</updated>
+    <updated>2019-06-12T13:16:40.150Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lybvinci.github.io"/>
     <link rel="self" href="https://lybvinci.github.io/atom.xml"/>
-    <subtitle>化繁为简</subtitle>
+    <subtitle>学而不思则罔，思而不学则殆。</subtitle>
     <logo>https://lybvinci.github.io/images/avatar.png</logo>
     <icon>https://lybvinci.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, Lybvinci&apos;s blob</rights>
