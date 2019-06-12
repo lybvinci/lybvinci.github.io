@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>如何获取安卓 framework 源码 | Lybvinci&#39;s blob</title>
+<meta name="description" content="化繁为简">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://lybvinci.github.io/favicon.ico?v=1560345206664">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://lybvinci.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://lybvinci.github.io">
+        <img src="https://lybvinci.github.io/images/avatar.png?v=1560345206664" class="site-logo">
+        <h1 class="site-title">Lybvinci&#39;s blob</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="https://lybvinci.github.io" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      化繁为简
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://lybvinci.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">如何获取安卓 framework 源码</h2>
+            <div class="post-date">2019-06-12</div>
+            
+            <div class="post-content">
+              <p>最近由于工作需要，需要反编译获取安卓 Q framework 层的源码。然而安卓Q的源码按照历史的方式去反编译，都不成功。但是通过这次尝试，也初次学到了如何反编译安卓源码。下面就做一些记录。(文中都是依照安卓9.0举例。)</p>
+<!-- more --> 
+<h1 id="通过系统安装包">通过系统安装包</h1>
+<p>这种方式，首先要求你能获取到系统的安装包。一般都是一个 zip 包，去官网就能下载到，此处不再赘述。解压完zip 包，可以看到里面还有一个 zip 压缩包，一般是 <em>image</em> 开头。接着把这个zip包进行一次解压，可以看到里面有很多以 *<em>.img</em> 结尾的文件，我们关注的 framework 层的代码就都在这个 system.img 里面。此时就需要 <a href="https://www.mediafire.com/file/gjy2a57k33b4vpa/simg2img">simg2img</a> 工具出场了。</p>
+<pre><code class="language-shell">simg2img system.img system.ext4.img(自定义的输出文件名,后续都用这个文件名.) 
+</code></pre>
+<p>因为 system.img 是谷歌自己定义的一个格式，通过 file 命令可以查看:</p>
+<pre><code class="language-shell">$ file system.img
+system.img: Android sparse image, version: 1.0, Total of 202229 4096-byte output blocks in 15 input chunks
+</code></pre>
+<p>必须通过 simg2img 命令进行转换，才能变成真正的 ext4 的镜像。然后就可以进行挂载了。</p>
+<h2 id="mac">mac</h2>
+<p>mac上你必须安装 <a href="https://osxfuse.github.io/">fuse</a>,之后再通过 brew 安装 ext4fuse.</p>
+<pre><code class="language-shell">brew cask install osxfuse	
+</code></pre>
+<p><strong>注意：</strong> 安装完成必须重启。否则命令无论如何也不会生效。如果运行时报错说版本不匹配，那么最好的方式就是卸载重装。</p>
+<p>一切准备就绪之后，就可以通过如下命令：</p>
+<pre><code>mkdir system //文件夹名称随便起名
+ext4fuse ./system.ext4.img ./system -o allow_other
+</code></pre>
+<p>如果一切顺利，你就可以在system文件夹看到想要镜像里面的内容了。</p>
+<h2 id="linux">linux</h2>
+<p>linux 上比较容易,为了避免失败，最好按照只读的方式去挂载。</p>
+<pre><code class="language-shell">$ sudo mount -t ext4 -o ro,loop system.ext4.img ./system/  //ro 表示只读
+$ ls system
+$ ls
+acct  bin         cache    config  data           default.prop  dsp  firmware  init.environ.rc  init.usb.configfs.rc  init.zygote32.rc     lost+found  mnt  oem      postinstall  product           res   sdcard   sys     ueventd.rc
+apex  bugreports  charger  d       debug_ramdisk  dev           etc  init      init.rc          init.usb.rc           init.zygote64_32.rc  metadata    odm  persist  proc         product_services  sbin  storage  system  vendor
+</code></pre>
+<p>接下来就是如何去解oat,vdex了。</p>
+<h1 id="直接从手机获取">直接从手机获取</h1>
+<p>上面说的挂载镜像，实际就相当于把系统安装起来，那么手机不就是现成的已经安装好的系统吗？所以只需要通过adb 命令就能直接从手机里面提取所需的文件。(无需 root 即可获取)</p>
+<pre><code>adb pull /system/framework/arm64/boot-framework.vdex ./
+</code></pre>
+<p>每个安卓版本都不一样，此处说的是9.0.之前的版本是怎么样的，请参考<a href="%5Bhttp://wuxianlin.com/2019/03/22/android-reverse-engineering/#more%5D(http://wuxianlin.com/2019/03/22/android-reverse-engineering/#more)">这篇文章</a>。</p>
+<h1 id="反编译-vdex-文件">反编译 vdex 文件</h1>
+<p>获取了文件之后，接下来就是进行反编译。此处祭出神器 <a href="https://github.com/anestisb/vdexExtractor">vdexExtractor</a>, clone 工程，然后在本地进行编译。得到 bin/vdexExtractor 工具，执行：</p>
+<pre><code class="language-shell">$ vdexExtractor -i boot-framework.vdex
+$ ls *.cdex
+boot-framework_classes.cdex  boot-framework_classes2.cdex boot-framework_classes3.cdex
+</code></pre>
+<p>得到了三个 cdex 文件。本来执行完就是最终的 dex 文件了，但是9.0又加了一层 cdex ,好吧，只好再拿出另一个工具，<a href="https://github.com/linusyang92/mipay-extract/tree/master/tools/cdex">compact_dex_converter</a>, 来将cdex 转换为 dex.</p>
+<pre><code class="language-shell">$ mkdir cdexout  // 转换结果的输出目录
+$ ./bin/compact_dex_converter -w cdexout ./boot-framework_classes.cdex
+</code></pre>
+<p>这样在 cdexout 目录，就能看到最终的 dex 文件了。虽然他们还是 cdex 结尾的文件，实质却已经是 dex 文件了。手动进行一下改名，就可以通过 jd-gui 或者 jade 工具查看了。</p>
+<h1 id="遗憾">遗憾</h1>
+<p>遗憾的是安卓 Q 目前还并不支持。所有的工具目前都无法正常解析，版本无法成功匹配。只有等真正的源码出来之后，再做进一步处理了。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://lybvinci.github.io/post/arraylist-qian-xi">
+                  <h3 class="post-title">
+                    ArrayList浅析
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lybvinci.github.io</id>
     <title>Lybvinci&apos;s blob</title>
-    <updated>2019-06-02T11:26:26.763Z</updated>
+    <updated>2019-06-12T13:13:50.734Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lybvinci.github.io"/>
     <link rel="self" href="https://lybvinci.github.io/atom.xml"/>
@@ -10,6 +10,64 @@
     <logo>https://lybvinci.github.io/images/avatar.png</logo>
     <icon>https://lybvinci.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, Lybvinci&apos;s blob</rights>
+    <entry>
+        <title type="html"><![CDATA[如何获取安卓 framework 源码]]></title>
+        <id>https://lybvinci.github.io/post/ru-he-huo-qu-an-zhuo-framework-yuan-ma</id>
+        <link href="https://lybvinci.github.io/post/ru-he-huo-qu-an-zhuo-framework-yuan-ma">
+        </link>
+        <updated>2019-06-12T13:12:31.000Z</updated>
+        <summary type="html"><![CDATA[<p>最近由于工作需要，需要反编译获取安卓 Q framework 层的源码。然而安卓Q的源码按照历史的方式去反编译，都不成功。但是通过这次尝试，也初次学到了如何反编译安卓源码。下面就做一些记录。(文中都是依照安卓9.0举例。)</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>最近由于工作需要，需要反编译获取安卓 Q framework 层的源码。然而安卓Q的源码按照历史的方式去反编译，都不成功。但是通过这次尝试，也初次学到了如何反编译安卓源码。下面就做一些记录。(文中都是依照安卓9.0举例。)</p>
+<!-- more --> 
+<h1 id="通过系统安装包">通过系统安装包</h1>
+<p>这种方式，首先要求你能获取到系统的安装包。一般都是一个 zip 包，去官网就能下载到，此处不再赘述。解压完zip 包，可以看到里面还有一个 zip 压缩包，一般是 <em>image</em> 开头。接着把这个zip包进行一次解压，可以看到里面有很多以 *<em>.img</em> 结尾的文件，我们关注的 framework 层的代码就都在这个 system.img 里面。此时就需要 <a href="https://www.mediafire.com/file/gjy2a57k33b4vpa/simg2img">simg2img</a> 工具出场了。</p>
+<pre><code class="language-shell">simg2img system.img system.ext4.img(自定义的输出文件名,后续都用这个文件名.) 
+</code></pre>
+<p>因为 system.img 是谷歌自己定义的一个格式，通过 file 命令可以查看:</p>
+<pre><code class="language-shell">$ file system.img
+system.img: Android sparse image, version: 1.0, Total of 202229 4096-byte output blocks in 15 input chunks
+</code></pre>
+<p>必须通过 simg2img 命令进行转换，才能变成真正的 ext4 的镜像。然后就可以进行挂载了。</p>
+<h2 id="mac">mac</h2>
+<p>mac上你必须安装 <a href="https://osxfuse.github.io/">fuse</a>,之后再通过 brew 安装 ext4fuse.</p>
+<pre><code class="language-shell">brew cask install osxfuse	
+</code></pre>
+<p><strong>注意：</strong> 安装完成必须重启。否则命令无论如何也不会生效。如果运行时报错说版本不匹配，那么最好的方式就是卸载重装。</p>
+<p>一切准备就绪之后，就可以通过如下命令：</p>
+<pre><code>mkdir system //文件夹名称随便起名
+ext4fuse ./system.ext4.img ./system -o allow_other
+</code></pre>
+<p>如果一切顺利，你就可以在system文件夹看到想要镜像里面的内容了。</p>
+<h2 id="linux">linux</h2>
+<p>linux 上比较容易,为了避免失败，最好按照只读的方式去挂载。</p>
+<pre><code class="language-shell">$ sudo mount -t ext4 -o ro,loop system.ext4.img ./system/  //ro 表示只读
+$ ls system
+$ ls
+acct  bin         cache    config  data           default.prop  dsp  firmware  init.environ.rc  init.usb.configfs.rc  init.zygote32.rc     lost+found  mnt  oem      postinstall  product           res   sdcard   sys     ueventd.rc
+apex  bugreports  charger  d       debug_ramdisk  dev           etc  init      init.rc          init.usb.rc           init.zygote64_32.rc  metadata    odm  persist  proc         product_services  sbin  storage  system  vendor
+</code></pre>
+<p>接下来就是如何去解oat,vdex了。</p>
+<h1 id="直接从手机获取">直接从手机获取</h1>
+<p>上面说的挂载镜像，实际就相当于把系统安装起来，那么手机不就是现成的已经安装好的系统吗？所以只需要通过adb 命令就能直接从手机里面提取所需的文件。(无需 root 即可获取)</p>
+<pre><code>adb pull /system/framework/arm64/boot-framework.vdex ./
+</code></pre>
+<p>每个安卓版本都不一样，此处说的是9.0.之前的版本是怎么样的，请参考<a href="%5Bhttp://wuxianlin.com/2019/03/22/android-reverse-engineering/#more%5D(http://wuxianlin.com/2019/03/22/android-reverse-engineering/#more)">这篇文章</a>。</p>
+<h1 id="反编译-vdex-文件">反编译 vdex 文件</h1>
+<p>获取了文件之后，接下来就是进行反编译。此处祭出神器 <a href="https://github.com/anestisb/vdexExtractor">vdexExtractor</a>, clone 工程，然后在本地进行编译。得到 bin/vdexExtractor 工具，执行：</p>
+<pre><code class="language-shell">$ vdexExtractor -i boot-framework.vdex
+$ ls *.cdex
+boot-framework_classes.cdex  boot-framework_classes2.cdex boot-framework_classes3.cdex
+</code></pre>
+<p>得到了三个 cdex 文件。本来执行完就是最终的 dex 文件了，但是9.0又加了一层 cdex ,好吧，只好再拿出另一个工具，<a href="https://github.com/linusyang92/mipay-extract/tree/master/tools/cdex">compact_dex_converter</a>, 来将cdex 转换为 dex.</p>
+<pre><code class="language-shell">$ mkdir cdexout  // 转换结果的输出目录
+$ ./bin/compact_dex_converter -w cdexout ./boot-framework_classes.cdex
+</code></pre>
+<p>这样在 cdexout 目录，就能看到最终的 dex 文件了。虽然他们还是 cdex 结尾的文件，实质却已经是 dex 文件了。手动进行一下改名，就可以通过 jd-gui 或者 jade 工具查看了。</p>
+<h1 id="遗憾">遗憾</h1>
+<p>遗憾的是安卓 Q 目前还并不支持。所有的工具目前都无法正常解析，版本无法成功匹配。只有等真正的源码出来之后，再做进一步处理了。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[ArrayList浅析]]></title>
         <id>https://lybvinci.github.io/post/arraylist-qian-xi</id>
@@ -1313,75 +1371,6 @@ inline struct node_module* FindModule(struct node_module* list,
 </ul>
 <h2 id="0x03-最后">0x03 最后</h2>
 <p>浏览器先机已经被占了，但还是有一些机会，好的创意总会占有市场。大家的意见是什么呢？</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[如何绘制阴影box-shadow效果]]></title>
-        <id>https://lybvinci.github.io/post/ru-he-hui-zhi-yin-ying-box-shadow-xiao-guo</id>
-        <link href="https://lybvinci.github.io/post/ru-he-hui-zhi-yin-ying-box-shadow-xiao-guo">
-        </link>
-        <updated>2019-06-02T11:05:36.000Z</updated>
-        <summary type="html"><![CDATA[<h2 id="网上搜索到的做法">网上搜索到的做法</h2>
-<ul>
-<li>加一个背景，android:background=&quot;@android:drawable/dialog_holo_light_frame 这个安卓自带的图片，设置为背景，就带有阴影效果。</li>
-<li>通过使用5.0以上的方法，<code>View.setElevation()</code> 方法，可以绘制阴影效果。</li>
-<li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
-</ul>
-]]></summary>
-        <content type="html"><![CDATA[<h2 id="网上搜索到的做法">网上搜索到的做法</h2>
-<ul>
-<li>加一个背景，android:background=&quot;@android:drawable/dialog_holo_light_frame 这个安卓自带的图片，设置为背景，就带有阴影效果。</li>
-<li>通过使用5.0以上的方法，<code>View.setElevation()</code> 方法，可以绘制阴影效果。</li>
-<li>通过添加padding,在view的边框上通过canvas绘制阴影。</li>
-</ul>
-<!-- more -->
-<h2 id="为何还要自己做的原因">为何还要自己做的原因</h2>
-<p>针对以上的所有方式，都不能很好的解决，原因有下：</p>
-<ul>
-<li>方案一，不能动态的改变背景颜色，而且如果view本身需要设置一个背景，此时有两个背景就会冲突，所以并不是通用的解决方案。</li>
-<li>方案二，现有的api不能支持所有的安卓版本绘制阴影，而且不能修改阴影颜色。</li>
-<li>方案三，改变view的大小，对布局有所影响。</li>
-</ul>
-<h2 id="解决方案">解决方案</h2>
-<h3 id="方案10">方案1.0</h3>
-<p>最开始，想到了系统<code>Paint</code>自带的方法。</p>
-<pre><code>//阴影只能在View.LAYER_TYPE_SOFTWARE 环 境 下 工 作 
-setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-paint.setShadowLayer(10, 10, 5, Color.BLACK);
-</code></pre>
-<p>通过这种方式，的确可以画出来阴影效果，但是此时并不能将阴影画在view的外面，其实还是画在了view的上面，也就是间接改变了view的大小。而且还必须设置<code>View.LAYER_TYPE_SOFTWARE</code>。</p>
-<pre><code>//首先获取已经被裁减过的画布大小
-clipBounds = canvas.getClipBounds();
-//改变画布大小 也可以使用insert方法。
-clipBounds.set(left, top, right, bottom);
-//将画布的大小进行替换，达到增大画布的效果。Region.Op.REPLACE 是关键
-canvas.clipRect(clipBounds, Region.Op.REPLACE);
-</code></pre>
-<p>或者：</p>
-<pre><code>设置不裁减孩子大小
-viewgroup.setClipChildren(false);
-设置可以在padding上画图
-viewgroup.setClipPadding(false);
-</code></pre>
-<p>通过上面两种方式，就可以将view所在的区域变大。但是第二种方式是将所有的view根节点设置为不裁剪，就是全局画布大小，而且要设置所有view容器，所以方法不具有通用性，不使用。
-方案二指定了想要扩大的view大小。接着使用上面阴影的设置方法，发现没有任何的效果。后来不断测试，发现了<code>this.setLayerType(View.LAYER_TYPE_SOFTWARE, null);</code> 和 <code>改变画布大小</code>的这段代码冲突，如果设置了<code>View.LAYER_TYPE_SOFTWARE</code>就不能改变画布的大小。
-由此，只能另选方法了。</p>
-<h3 id="方案20">方案2.0</h3>
-<p>必须要将画布大小进行放大，所以更改画布大小的代码必不可少。所以丢弃了 <code>setShadowLayer</code> 的方法。自己来绘制阴影效果。
-由于阴影可能会出现在一个view的上下左右四个角，为了减少判断，就直接在view外面绘制一个圈，分解为9个矩形。这是因为阴影的四个角需要圆滑一些，所以不是正常的矩形，所以共计上下左右+四个角+中心共9个矩形。这样做的好处就是简化了一部分逻辑，但是增加了绘制成本。谁有更好的绘制思路，可以给我留言。</p>
-<p>首先在绘制前，设置阴影的大小，偏移量，生成对应的Gradient对象，上下左右用LinearGradient，四个角用RadialGradient。再根据view的大小来找到每个矩形的顶点坐标，生成对应的Rect。用来绘制图像。
-在onDraw中，通过循环渲染9个矩形。绘制完成后，把和原view重叠的部分直接剪切掉，就形成了一个带有阴影效果的view。裁减方式如下：</p>
-<pre><code>Path rectPath = new Path();
-Path viewPath = new Path();
-viewPath.addRect(0, 0, viewWidth, viewHeight, Path.Direction.CW);
-rectPath.addRect(left, top, right, bottom, Path.Direction.CW);
-rectPath.op(rectPath, viewPath, Path.Op.DIFFERENCE);
-canvas.drawPath(rectPath, mPaint);
-</code></pre>
-<p>通过这种方式，就可以直接裁减掉重叠的部分，关于Path的使用请google。</p>
-<p>通过如上的方式，就可以绘制一个阴影了。</p>
-<h2 id="结语">结语</h2>
-<p>目前还不够完善，希望大家多提宝贵意见。有问题，评论留言。邮箱：lybvinci@foxmail.com 。</p>
 ]]></content>
     </entry>
 </feed>
